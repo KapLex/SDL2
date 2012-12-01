@@ -1,3 +1,22 @@
-================================================================================
-Simple DirectMedia Layer for PSP
-================================================================================
+SDL port for the Sony PSP contributed by 
+   Captian Lex 
+
+Credit to
+   Marcus R. Brown <mrbrown@ocgnet.org>
+   Jim Paris <jim@jtan.com>
+   Matthew H <matthewh@webone.com.au>
+
+Building
+--------
+To build for the PSP, make sure psp-config is in the path and run:
+   make -f Makefile.psp
+
+
+Test passed 
+------
+  testaudioinfo.c
+  loopwave.c
+
+
+To Do
+------

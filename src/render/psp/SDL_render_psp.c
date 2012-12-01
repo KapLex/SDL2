@@ -62,19 +62,19 @@ static int PSP_SetRenderTarget(SDL_Renderer * renderer,
 static int PSP_UpdateViewport(SDL_Renderer * renderer);
 static int PSP_RenderClear(SDL_Renderer * renderer);
 static int PSP_RenderDrawPoints(SDL_Renderer * renderer,
-                                 const SDL_Point * points, int count);
+                                 const SDL_FPoint * points, int count);
 static int PSP_RenderDrawLines(SDL_Renderer * renderer,
-                                const SDL_Point * points, int count);
+                                const SDL_FPoint * points, int count);
 static int PSP_RenderFillRects(SDL_Renderer * renderer,
-                                const SDL_Rect * rects, int count);
+                                const SDL_FRect * rects, int count);
 static int PSP_RenderCopy(SDL_Renderer * renderer, SDL_Texture * texture,
                            const SDL_Rect * srcrect,
-                           const SDL_Rect * dstrect);
+                           const SDL_FRect * dstrect);
 static int PSP_RenderReadPixels(SDL_Renderer * renderer, const SDL_Rect * rect,
                     Uint32 pixel_format, void * pixels, int pitch);
 static int PSP_RenderCopyEx(SDL_Renderer * renderer, SDL_Texture * texture,
-                         const SDL_Rect * srcrect, const SDL_Rect * dstrect,
-                         const double angle, const SDL_Point *center, const SDL_RendererFlip flip);
+                         const SDL_Rect * srcrect, const SDL_FRect * dstrect,
+                         const double angle, const SDL_FPoint *center, const SDL_RendererFlip flip);
 static void PSP_RenderPresent(SDL_Renderer * renderer);
 static void PSP_DestroyTexture(SDL_Renderer * renderer,
                                 SDL_Texture * texture);
@@ -701,7 +701,7 @@ PSP_UpdateViewport(SDL_Renderer * renderer)
 */
     return 0;
 }
-
+/*
 static int
 PSP_SetColor(SDL_Renderer * renderer)
 {
@@ -767,26 +767,25 @@ PSP_SetBlendMode(SDL_Renderer * renderer, int blendMode)
         data->currentBlendMode = blendMode;
     }
 }
-
+*/
 
 
 static int
 PSP_RenderClear(SDL_Renderer * renderer)
-{
+{					
+		//start list
+		StartDrawing(renderer);
 		int color = renderer->a << 24 | renderer->b << 16 | renderer->g << 8 | renderer->r;		
-					//clear screen
-					//Fix me: clear color not works
-
+					//clear screen fixed
 		sceGuClearColor(color);
 		sceGuClearDepth(0);
 		sceGuClear(GU_COLOR_BUFFER_BIT|GU_DEPTH_BUFFER_BIT|GU_FAST_CLEAR_BIT);
-					//start list
-		StartDrawing(renderer);
+
     return 0;
 }
 
 static int
-PSP_RenderDrawPoints(SDL_Renderer * renderer, const SDL_Point * points,
+PSP_RenderDrawPoints(SDL_Renderer * renderer, const SDL_FPoint * points,
                       int count)
 {
 		int color = renderer->a << 24 | renderer->b << 16 | renderer->g << 8 | renderer->r;
@@ -810,7 +809,7 @@ PSP_RenderDrawPoints(SDL_Renderer * renderer, const SDL_Point * points,
 }
 
 static int
-PSP_RenderDrawLines(SDL_Renderer * renderer, const SDL_Point * points,
+PSP_RenderDrawLines(SDL_Renderer * renderer, const SDL_FPoint * points,
                      int count)
 {
 		int color = renderer->a << 24 | renderer->b << 16 | renderer->g << 8 | renderer->r;
@@ -835,7 +834,7 @@ PSP_RenderDrawLines(SDL_Renderer * renderer, const SDL_Point * points,
 }
 
 static int
-PSP_RenderFillRects(SDL_Renderer * renderer, const SDL_Rect * rects,
+PSP_RenderFillRects(SDL_Renderer * renderer, const SDL_FRect * rects,
                      int count)
 {
 		int color = renderer->a << 24 | renderer->b << 16 | renderer->g << 8 | renderer->r;
@@ -843,7 +842,7 @@ PSP_RenderFillRects(SDL_Renderer * renderer, const SDL_Rect * rects,
 		StartDrawing(renderer);
 		
     for (i = 0; i < count; ++i) {
-        const SDL_Rect *rect = &rects[i];
+        const SDL_FRect *rect = &rects[i];
 				VertV* vertices = (VertV*)sceGuGetMemory((sizeof(VertV)<<1));
 				vertices[0].x = rect->x;
 				vertices[0].y = rect->y;
@@ -904,7 +903,7 @@ void Swap(float *a, float *b)
 
 static int
 PSP_RenderCopy(SDL_Renderer * renderer, SDL_Texture * texture,
-                const SDL_Rect * srcrect, const SDL_Rect * dstrect)
+                const SDL_Rect * srcrect, const SDL_FRect * dstrect)
 {
 		float x, y, width, height;
 		float u0, v0, u1, v1;
@@ -1009,8 +1008,8 @@ PSP_RenderReadPixels(SDL_Renderer * renderer, const SDL_Rect * rect,
 
 static int
 PSP_RenderCopyEx(SDL_Renderer * renderer, SDL_Texture * texture,
-                const SDL_Rect * srcrect, const SDL_Rect * dstrect,
-                const double angle, const SDL_Point *center, const SDL_RendererFlip flip)
+                const SDL_Rect * srcrect, const SDL_FRect * dstrect,
+                const double angle, const SDL_FPoint *center, const SDL_RendererFlip flip)
 {
 		float x, y, width, height;
 		float u0, v0, u1, v1;
