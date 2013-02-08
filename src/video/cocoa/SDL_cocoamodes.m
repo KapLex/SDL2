@@ -24,6 +24,9 @@
 
 #include "SDL_cocoavideo.h"
 
+/* We need this for IODisplayCreateInfoDictionary and kIODisplayOnlyPreferredName */
+#include <IOKit/graphics/IOGraphicsLib.h>
+
 /* we need this for ShowMenuBar() and HideMenuBar(). */
 #include <Carbon/Carbon.h>
 
@@ -217,9 +220,22 @@ Cocoa_ReleaseDisplayModeList(_THIS, CFArrayRef modelist)
     #endif
 }
 
+static const char *
+Cocoa_GetDisplayName(CGDirectDisplayID displayID)
+{
+    NSDictionary *deviceInfo = (NSDictionary *)IODisplayCreateInfoDictionary(CGDisplayIOServicePort(displayID), kIODisplayOnlyPreferredName);
+    NSDictionary *localizedNames = [deviceInfo objectForKey:[NSString stringWithUTF8String:kDisplayProductName]];
+
+    if ([localizedNames count] > 0) {
+        return [[localizedNames objectForKey:[[localizedNames allKeys] objectAtIndex:0]] UTF8String];
+    }
+    return NULL;
+}
+
 void
 Cocoa_InitModes(_THIS)
 {
+    NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
     CGDisplayErr result;
     CGDirectDisplayID *displays;
     CGDisplayCount numDisplays;
@@ -228,6 +244,7 @@ Cocoa_InitModes(_THIS)
     result = CGGetOnlineDisplayList(0, NULL, &numDisplays);
     if (result != kCGErrorSuccess) {
         CG_SetError("CGGetOnlineDisplayList()", result);
+        [pool release];
         return;
     }
     displays = SDL_stack_alloc(CGDirectDisplayID, numDisplays);
@@ -235,6 +252,7 @@ Cocoa_InitModes(_THIS)
     if (result != kCGErrorSuccess) {
         CG_SetError("CGGetOnlineDisplayList()", result);
         SDL_stack_free(displays);
+        [pool release];
         return;
     }
 
@@ -284,6 +302,7 @@ Cocoa_InitModes(_THIS)
             displaydata->display = displays[i];
 
             SDL_zero(display);
+            display.name = (char *)Cocoa_GetDisplayName(displays[i]);
             if (!GetDisplayMode (_this, moderef, &mode)) {
                 Cocoa_ReleaseDisplayMode(_this, moderef);
                 SDL_free(displaydata);
@@ -297,6 +316,7 @@ Cocoa_InitModes(_THIS)
         }
     }
     SDL_stack_free(displays);
+    [pool release];
 }
 
 int

@@ -164,6 +164,13 @@ extern "C" {
 #define SDL_HINT_GRAB_KEYBOARD              "SDL_GRAB_KEYBOARD"
 
 /**
+ *  \brief Minimize your SDL_Window if it loses key focus when in Fullscreen mode. Defaults to true.
+ *
+ */
+#define SDL_HINT_VIDEO_MINIMIZE_ON_FOCUS_LOSS   "SDL_VIDEO_MINIMIZE_ON_FOCUS_LOSS"
+
+	
+/**
  *  \brief  A variable controlling whether the idle timer is disabled on iOS.
  *
  *  When an iOS app does not receive touches for some time, the screen is
@@ -195,6 +202,18 @@ extern "C" {
  *  The variable expected newline delimited rows of gamecontroller config data, see SDL_gamecontroller.h
  */
 #define SDL_HINT_GAMECONTROLLERCONFIG "SDL_GAMECONTROLLERCONFIG"
+
+
+/**
+ *  \brief If set to 0 then never set the top most bit on a SDL Window, even if the video mode expects it.
+ *		This is a debugging aid for developers and not expected to be used by end users. The default is "1"
+ *
+ *  This variable can be set to the following values:
+ *    "0"       - don't allow topmost
+ *    "1"       - allow topmost
+ */
+#define SDL_HINT_ALLOW_TOPMOST "SDL_ALLOW_TOPMOST"
+
 
 
 /**

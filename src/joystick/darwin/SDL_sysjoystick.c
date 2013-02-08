@@ -920,7 +920,6 @@ SDL_bool
 SDL_SYS_JoystickAttached(SDL_Joystick * joystick)
 {
 	recDevice *device = gpDeviceList;
-    int index;
 	
 	while ( device )
 	{
@@ -1084,7 +1083,7 @@ SDL_SYS_JoystickQuit(void)
 }
 
 
-JoystickGUID SDL_SYS_JoystickGetDeviceGUID( int device_index )
+SDL_JoystickGUID SDL_SYS_JoystickGetDeviceGUID( int device_index )
 {
     recDevice *device = gpDeviceList;
     int index;
@@ -1095,7 +1094,7 @@ JoystickGUID SDL_SYS_JoystickGetDeviceGUID( int device_index )
 	return device->guid;	
 }
 
-JoystickGUID SDL_SYS_JoystickGetGUID(SDL_Joystick *joystick)
+SDL_JoystickGUID SDL_SYS_JoystickGetGUID(SDL_Joystick *joystick)
 {
 	return joystick->hwdata->guid;
 }

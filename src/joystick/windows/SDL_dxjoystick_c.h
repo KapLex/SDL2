@@ -84,10 +84,10 @@ typedef struct
 /* The private structure used to keep track of a joystick */
 struct joystick_hwdata
 {
-    LPDIRECTINPUTDEVICE2 InputDevice;
+    LPDIRECTINPUTDEVICE8 InputDevice;
     DIDEVCAPS Capabilities;
     int buffered;
-	JoystickGUID guid;
+	SDL_JoystickGUID guid;
 
     input_t Inputs[MAX_INPUTS];
     int NumInputs;

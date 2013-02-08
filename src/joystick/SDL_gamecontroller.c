@@ -48,7 +48,7 @@ struct _SDL_HatAsButton
 /* our in memory mapping db between joystick objects and controller mappings*/
 struct _SDL_ControllerMapping
 {
-	JoystickGUID guid;
+	SDL_JoystickGUID guid;
 	const char *name;
 
 	// mapping of axis/button id to controller version
@@ -71,7 +71,7 @@ struct _SDL_ControllerMapping
 /* our hard coded list of mapping support */
 typedef struct _ControllerMapping_t
 {
-	JoystickGUID guid;
+	SDL_JoystickGUID guid;
 	char *name;
 	const char *mapping;
 	struct _ControllerMapping_t *next;
@@ -458,7 +458,7 @@ SDL_PrivateGameControllerParseControllerConfigString( struct _SDL_ControllerMapp
 /*
  * Make a new button mapping struct
  */
-void SDL_PrivateLoadButtonMapping( struct _SDL_ControllerMapping *pMapping, JoystickGUID guid, const char *pchName, const char *pchMapping )
+void SDL_PrivateLoadButtonMapping( struct _SDL_ControllerMapping *pMapping, SDL_JoystickGUID guid, const char *pchName, const char *pchMapping )
 {
 	int j;
 
@@ -518,21 +518,26 @@ char *SDL_PrivateGetControllerGUIDFromMappingString( const char *pMapping )
  */
 char *SDL_PrivateGetControllerNameFromMappingString( const char *pMapping )
 {
-	const char *pFirstComma = SDL_strchr( pMapping, ',' );
-	const char *pSecondComma = SDL_strchr( pFirstComma + 1, ',' );
-	if ( pFirstComma && pSecondComma )
-	{
-		char *pchName = SDL_malloc( pSecondComma - pFirstComma );
-		if ( !pchName )
-		{
-			SDL_OutOfMemory();
-			return NULL;
-		}
-		SDL_memcpy( pchName, pFirstComma + 1, pSecondComma - pFirstComma );
-		pchName[ pSecondComma - pFirstComma - 1 ] = 0;
-		return pchName;
-	}
-	return NULL;
+	const char *pFirstComma, *pSecondComma;
+    char *pchName;
+
+    pFirstComma = SDL_strchr( pMapping, ',' );
+    if ( !pFirstComma )
+        return NULL;
+
+	pSecondComma = SDL_strchr( pFirstComma + 1, ',' );
+    if ( !pSecondComma )
+        return NULL;
+
+    pchName = SDL_malloc( pSecondComma - pFirstComma );
+    if ( !pchName )
+    {
+        SDL_OutOfMemory();
+        return NULL;
+    }
+    SDL_memcpy( pchName, pFirstComma + 1, pSecondComma - pFirstComma );
+    pchName[ pSecondComma - pFirstComma - 1 ] = 0;
+    return pchName;
 }
 
 
@@ -541,12 +546,17 @@ char *SDL_PrivateGetControllerNameFromMappingString( const char *pMapping )
  */
 const char *SDL_PrivateGetControllerMappingFromMappingString( const char *pMapping )
 {
-	const char *pFirstComma = SDL_strchr( pMapping, ',' );
-	const char *pSecondComma = SDL_strchr( pFirstComma + 1, ',' );
-	if ( pSecondComma )
-		return pSecondComma + 1; // mapping is everything after the 3rd comma, no need to malloc it
-	else
-		return NULL;
+	const char *pFirstComma, *pSecondComma;
+
+    pFirstComma = SDL_strchr( pMapping, ',' );
+    if ( !pFirstComma )
+        return NULL;
+
+	pSecondComma = SDL_strchr( pFirstComma + 1, ',' );
+    if ( !pSecondComma )
+        return NULL;
+
+    return pSecondComma + 1; /* mapping is everything after the 3rd comma, no need to malloc it */
 }
 
 
@@ -603,8 +613,8 @@ SDL_GameControllerInit(void)
 		if ( hint && hint[0] )
 		{
 			int nchHints = SDL_strlen( hint );
-			char *pUserMappings = SDL_malloc( nchHints + 1 );
-			SDL_memcpy( pUserMappings, hint, nchHints );
+			char *pUserMappings = SDL_malloc( nchHints + 1 ); /* FIXME: memory leak, but we can't free it in this function because pchMapping below points into this memory */
+			SDL_memcpy( pUserMappings, hint, nchHints + 1 );
 			while ( pUserMappings )
 			{
 				char *pchGUID;
@@ -673,7 +683,7 @@ SDL_GameControllerNameForIndex(int device_index)
 	}
 	else
 	{
-		JoystickGUID jGUID = SDL_JoystickGetDeviceGUID( device_index );
+		SDL_JoystickGUID jGUID = SDL_JoystickGetDeviceGUID( device_index );
 		pSupportedController = s_pSupportedControllers;
 		while ( pSupportedController )
 		{
@@ -700,10 +710,11 @@ int SDL_IsGameController(int device_index)
 	}
 	else
 	{
-		JoystickGUID jGUID = SDL_JoystickGetDeviceGUID( device_index );
+		SDL_JoystickGUID jGUID = SDL_JoystickGetDeviceGUID( device_index );
 		pSupportedController = s_pSupportedControllers;
 		// debug code to help get the guid string for a new joystick
-		/*const char *pchGUID = SDL_JoystickGetGUIDString( jGUID );
+		/* char szGUID[33];
+		SDL_JoystickGetGUIDString( jGUID, szGUID, sizeof(szGUID) );
 		printf( "%s\n", pchGUID );
 		SDL_free( pchGUID );*/
 		while ( pSupportedController )
@@ -759,7 +770,7 @@ SDL_GameControllerOpen(int device_index)
 	pSupportedController =  SDL_PrivateGetControllerMapping(device_index);
 	if ( !pSupportedController )
 	{
-		JoystickGUID jGUID;
+		SDL_JoystickGUID jGUID;
 
 		jGUID = SDL_JoystickGetDeviceGUID( device_index );
 		pSupportedController = s_pSupportedControllers;

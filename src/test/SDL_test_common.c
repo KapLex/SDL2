@@ -1,5 +1,6 @@
 /*
-  Copyright (C) 1997-2011 Sam Lantinga <slouken@libsdl.org>
+  Simple DirectMedia Layer
+  Copyright (C) 1997-2012 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -7,25 +8,34 @@
 
   Permission is granted to anyone to use this software for any purpose,
   including commercial applications, and to alter it and redistribute it
-  freely.
+  freely, subject to the following restrictions:
+
+  1. The origin of this software must not be misrepresented; you must not
+     claim that you wrote the original software. If you use this software
+     in a product, an acknowledgment in the product documentation would be
+     appreciated but is not required.
+  2. Altered source versions must be plainly marked as such, and must not be
+     misrepresented as being the original software.
+  3. This notice may not be removed or altered from any source distribution.
 */
 
-/* A simple test program framework */
+/* Ported from original test\common.c file. */
+
+#include "SDL_config.h"
+#include "SDL_test.h"
 
 #include <stdio.h>
 
-#include "common.h"
-
 #define VIDEO_USAGE \
-"[--video driver] [--renderer driver] [--info all|video|modes|render|event] [--log all|error|system|audio|video|render|input] [--display N] [--fullscreen | --windows N] [--title title] [--icon icon.bmp] [--center | --position X,Y] [--geometry WxH] [--depth N] [--refresh R] [--vsync] [--noframe] [--resize] [--minimize] [--maximize] [--grab]"
+"[--video driver] [--renderer driver] [--info all|video|modes|render|event] [--log all|error|system|audio|video|render|input] [--display N] [--fullscreen | --fullscreen-desktop | --windows N] [--title title] [--icon icon.bmp] [--center | --position X,Y] [--geometry WxH] [--min-geometry WxH] [--max-geometry WxH] [--depth N] [--refresh R] [--vsync] [--noframe] [--resize] [--minimize] [--maximize] [--grab]"
 
 #define AUDIO_USAGE \
 "[--rate N] [--format U8|S8|U16|U16LE|U16BE|S16|S16LE|S16BE] [--channels N] [--samples N]"
 
-CommonState *
-CommonCreateState(char **argv, Uint32 flags)
+SDLTest_CommonState *
+SDLTest_CommonCreateState(char **argv, Uint32 flags)
 {
-    CommonState *state = SDL_calloc(1, sizeof(*state));
+    SDLTest_CommonState *state = (SDLTest_CommonState *)SDL_calloc(1, sizeof(*state));
     if (!state) {
         SDL_OutOfMemory();
         return NULL;
@@ -73,7 +83,7 @@ CommonCreateState(char **argv, Uint32 flags)
 }
 
 int
-CommonArg(CommonState * state, int index)
+SDLTest_CommonArg(SDLTest_CommonState * state, int index)
 {
     char **argv = state->argv;
 
@@ -182,6 +192,11 @@ CommonArg(CommonState * state, int index)
         state->num_windows = 1;
         return 1;
     }
+    if (SDL_strcasecmp(argv[index], "--fullscreen-desktop") == 0) {
+        state->window_flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
+        state->num_windows = 1;
+        return 1;
+    }
     if (SDL_strcasecmp(argv[index], "--windows") == 0) {
         ++index;
         if (!argv[index] || !SDL_isdigit(*argv[index])) {
@@ -249,6 +264,44 @@ CommonArg(CommonState * state, int index)
         *h++ = '\0';
         state->window_w = SDL_atoi(w);
         state->window_h = SDL_atoi(h);
+        return 2;
+    }
+    if (SDL_strcasecmp(argv[index], "--min-geometry") == 0) {
+        char *w, *h;
+        ++index;
+        if (!argv[index]) {
+            return -1;
+        }
+        w = argv[index];
+        h = argv[index];
+        while (*h && *h != 'x') {
+            ++h;
+        }
+        if (!*h) {
+            return -1;
+        }
+        *h++ = '\0';
+        state->window_minW = SDL_atoi(w);
+        state->window_minH = SDL_atoi(h);
+        return 2;
+    }
+    if (SDL_strcasecmp(argv[index], "--max-geometry") == 0) {
+        char *w, *h;
+        ++index;
+        if (!argv[index]) {
+            return -1;
+        }
+        w = argv[index];
+        h = argv[index];
+        while (*h && *h != 'x') {
+            ++h;
+        }
+        if (!*h) {
+            return -1;
+        }
+        *h++ = '\0';
+        state->window_maxW = SDL_atoi(w);
+        state->window_maxH = SDL_atoi(h);
         return 2;
     }
     if (SDL_strcasecmp(argv[index], "--depth") == 0) {
@@ -367,7 +420,7 @@ CommonArg(CommonState * state, int index)
 }
 
 const char *
-CommonUsage(CommonState * state)
+SDLTest_CommonUsage(SDLTest_CommonState * state)
 {
     switch (state->flags & (SDL_INIT_VIDEO | SDL_INIT_AUDIO)) {
     case SDL_INIT_VIDEO:
@@ -382,7 +435,7 @@ CommonUsage(CommonState * state)
 }
 
 static void
-PrintRendererFlag(Uint32 flag)
+SDLTest_PrintRendererFlag(Uint32 flag)
 {
     switch (flag) {
     case SDL_RENDERER_PRESENTVSYNC:
@@ -398,7 +451,7 @@ PrintRendererFlag(Uint32 flag)
 }
 
 static void
-PrintPixelFormat(Uint32 format)
+SDLTest_PrintPixelFormat(Uint32 format)
 {
     switch (format) {
     case SDL_PIXELFORMAT_UNKNOWN:
@@ -498,7 +551,7 @@ PrintPixelFormat(Uint32 format)
 }
 
 static void
-PrintRenderer(SDL_RendererInfo * info)
+SDLTest_PrintRenderer(SDL_RendererInfo * info)
 {
     int i, count;
 
@@ -513,7 +566,7 @@ PrintRenderer(SDL_RendererInfo * info)
             if (count > 0) {
                 fprintf(stderr, " | ");
             }
-            PrintRendererFlag(flag);
+            SDLTest_PrintRendererFlag(flag);
             ++count;
         }
     }
@@ -524,7 +577,7 @@ PrintRenderer(SDL_RendererInfo * info)
         if (i > 0) {
             fprintf(stderr, ", ");
         }
-        PrintPixelFormat(info->texture_formats[i]);
+        SDLTest_PrintPixelFormat(info->texture_formats[i]);
     }
     fprintf(stderr, "\n");
 
@@ -535,7 +588,7 @@ PrintRenderer(SDL_RendererInfo * info)
 }
 
 static SDL_Surface *
-LoadIcon(const char *file)
+SDLTest_LoadIcon(const char *file)
 {
     SDL_Surface *icon;
 
@@ -555,7 +608,7 @@ LoadIcon(const char *file)
 }
 
 SDL_bool
-CommonInit(CommonState * state)
+SDLTest_CommonInit(SDLTest_CommonState * state)
 {
     int i, j, m, n, w, h;
     SDL_DisplayMode fullscreen_mode;
@@ -621,7 +674,7 @@ CommonInit(CommonState * state)
             n = SDL_GetNumVideoDisplays();
             fprintf(stderr, "Number of displays: %d\n", n);
             for (i = 0; i < n; ++i) {
-                fprintf(stderr, "Display %d:\n", i);
+                fprintf(stderr, "Display %d: %s\n", i, SDL_GetDisplayName(i));
 
                 SDL_zero(bounds);
                 SDL_GetDisplayBounds(i, &bounds);
@@ -683,7 +736,7 @@ CommonInit(CommonState * state)
                 fprintf(stderr, "Built-in render drivers:\n");
                 for (i = 0; i < n; ++i) {
                     SDL_GetRenderDriverInfo(i, &info);
-                    PrintRenderer(&info);
+                    SDLTest_PrintRenderer(&info);
                 }
             }
         }
@@ -736,6 +789,12 @@ CommonInit(CommonState * state)
                         SDL_GetError());
                 return SDL_FALSE;
             }
+            if (state->window_minW || state->window_minH) {
+                SDL_SetWindowMinimumSize(state->windows[i], state->window_minW, state->window_minH);
+            }
+            if (state->window_maxW || state->window_maxH) {
+                SDL_SetWindowMaximumSize(state->windows[i], state->window_maxW, state->window_maxH);
+            }
             SDL_GetWindowSize(state->windows[i], &w, &h);
             if (!(state->window_flags & SDL_WINDOW_RESIZABLE) &&
                 (w != state->window_w || h != state->window_h)) {
@@ -750,7 +809,7 @@ CommonInit(CommonState * state)
             }
 
             if (state->window_icon) {
-                SDL_Surface *icon = LoadIcon(state->window_icon);
+                SDL_Surface *icon = SDLTest_LoadIcon(state->window_icon);
                 if (icon) {
                     SDL_SetWindowIcon(state->windows[i], icon);
                     SDL_FreeSurface(icon);
@@ -795,7 +854,7 @@ CommonInit(CommonState * state)
 
                     fprintf(stderr, "Current renderer:\n");
                     SDL_GetRendererInfo(state->renderers[i], &info);
-                    PrintRenderer(&info);
+                    SDLTest_PrintRenderer(&info);
                 }
             }
         }
@@ -837,7 +896,7 @@ CommonInit(CommonState * state)
 }
 
 static void
-PrintEvent(SDL_Event * event)
+SDLTest_PrintEvent(SDL_Event * event)
 {
     if (event->type == SDL_MOUSEMOTION) {
         /* Mouse motion is really spammy */
@@ -1012,7 +1071,7 @@ PrintEvent(SDL_Event * event)
 }
 
 static void
-ScreenShot(SDL_Renderer *renderer)
+SDLTest_ScreenShot(SDL_Renderer *renderer)
 {
     SDL_Rect viewport;
     SDL_Surface *surface;
@@ -1047,12 +1106,12 @@ ScreenShot(SDL_Renderer *renderer)
 }
 
 void
-CommonEvent(CommonState * state, SDL_Event * event, int *done)
+SDLTest_CommonEvent(SDLTest_CommonState * state, SDL_Event * event, int *done)
 {
     int i;
 
     if (state->verbose & VERBOSE_EVENT) {
-        PrintEvent(event);
+        SDLTest_PrintEvent(event);
     }
 
     switch (event->type) {
@@ -1094,7 +1153,7 @@ CommonEvent(CommonState * state, SDL_Event * event, int *done)
                 if (window) {
                     for (i = 0; i < state->num_windows; ++i) {
                         if (window == state->windows[i]) {
-                            ScreenShot(state->renderers[i]);
+                            SDLTest_ScreenShot(state->renderers[i]);
                         }
                     }
                 }
@@ -1224,7 +1283,7 @@ CommonEvent(CommonState * state, SDL_Event * event, int *done)
 }
 
 void
-CommonQuit(CommonState * state)
+SDLTest_CommonQuit(SDLTest_CommonState * state)
 {
     int i;
 

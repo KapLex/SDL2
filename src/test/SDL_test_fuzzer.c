@@ -27,7 +27,15 @@
 
 #include "SDL_config.h"
 
+/* Visual Studio 2008 doesn't have stdint.h */
+#if defined(_MSC_VER) && _MSC_VER <= 1500
+#define UINT8_MAX   ~(Uint8)0
+#define UINT16_MAX  ~(Uint16)0
+#define UINT32_MAX  ~(Uint32)0
+#define UINT64_MAX  ~(Uint64)0
+#else
 #include <stdint.h>
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <limits.h>
@@ -38,7 +46,7 @@
 /** 
  *Counter for fuzzer invocations
  */
-static int fuzzerInvocationCounter;
+static int fuzzerInvocationCounter = 0;
 
 /**
  * Context for shared random number generator
@@ -52,13 +60,15 @@ static SDLTest_RandomContext rndContext;
 void
 SDLTest_FuzzerInit(Uint64 execKey)
 {
-	Uint32 a = (execKey >> 32)  & 0x00000000FFFFFFFF;
+	Uint32 a = (execKey >> 32) & 0x00000000FFFFFFFF;
 	Uint32 b = execKey & 0x00000000FFFFFFFF;
+	SDL_memset((void *)&rndContext, 0, sizeof(SDLTest_RandomContext));
 	SDLTest_RandomInit(&rndContext, a, b);
+	fuzzerInvocationCounter = 0;
 }
 
 int
-SDLTest_GetInvocationCount()
+SDLTest_GetFuzzerInvocationCount()
 {
 	return fuzzerInvocationCounter;
 }
@@ -114,8 +124,8 @@ SDLTest_RandomUint32()
 Uint64
 SDLTest_RandomUint64()
 {
-	Uint64 value;
-	Uint32 *vp = (void*)&value;
+	Uint64 value = 0;
+	Uint32 *vp = (void *)&value;
 
 	fuzzerInvocationCounter++;
 
@@ -128,8 +138,8 @@ SDLTest_RandomUint64()
 Sint64
 SDLTest_RandomSint64()
 {
-	Uint64 value;
-	Uint32 *vp = (void*)&value;
+	Uint64 value = 0;
+	Uint32 *vp = (void *)&value;
 
 	fuzzerInvocationCounter++;
 
@@ -263,7 +273,7 @@ SDLTest_RandomUint8BoundaryValue(Uint8 boundary1, Uint8 boundary2, SDL_bool vali
 	size = SDLTest_GenerateUnsignedBoundaryValues(maxValue,
 				(Uint64) boundary1, (Uint64) boundary2,
 				validDomain, buffer);
-	if (size == 0) {
+	if (buffer == NULL || size == 0) {
 		return 0;
 	}
 
@@ -291,7 +301,7 @@ SDLTest_RandomUint16BoundaryValue(Uint16 boundary1, Uint16 boundary2, SDL_bool v
 	size = SDLTest_GenerateUnsignedBoundaryValues(maxValue,
 				(Uint64) boundary1, (Uint64) boundary2,
 				validDomain, buffer);
-	if(size == 0) {
+	if (buffer == NULL || size == 0) {
 		return 0;
 	}
 
@@ -319,7 +329,7 @@ SDLTest_RandomUint32BoundaryValue(Uint32 boundary1, Uint32 boundary2, SDL_bool v
 	size = SDLTest_GenerateUnsignedBoundaryValues(maxValue,
 				(Uint64) boundary1, (Uint64) boundary2,
 				validDomain, buffer);
-	if(size == 0) {
+	if (buffer == NULL || size == 0) {
 		return 0;
 	}
 
@@ -347,7 +357,7 @@ SDLTest_RandomUint64BoundaryValue(Uint64 boundary1, Uint64 boundary2, SDL_bool v
 	size = SDLTest_GenerateUnsignedBoundaryValues(maxValue,
 				(Uint64) boundary1, (Uint64) boundary2,
 				validDomain, buffer);
-	if(size == 0) {
+	if (buffer == NULL || size == 0) {
 		return 0;
 	}
 
@@ -467,7 +477,7 @@ SDLTest_RandomSint8BoundaryValue(Sint8 boundary1, Sint8 boundary2, SDL_bool vali
 	size = SDLTest_GenerateSignedBoundaryValues(minValue, maxValue,
 				(Sint64) boundary1, (Sint64) boundary2,
 				validDomain, buffer);
-	if(size == 0) {
+	if (buffer == NULL || size == 0) {
 		return CHAR_MIN;
 	}
 
@@ -495,7 +505,7 @@ SDLTest_RandomSint16BoundaryValue(Sint16 boundary1, Sint16 boundary2, SDL_bool v
 	size = SDLTest_GenerateSignedBoundaryValues(minValue, maxValue,
 					(Sint64) boundary1, (Sint64) boundary2,
 					validDomain, buffer);
-	if(size == 0) {
+	if (buffer == NULL || size == 0) {
 		return SHRT_MIN;
 	}
 
@@ -524,7 +534,7 @@ SDLTest_RandomSint32BoundaryValue(Sint32 boundary1, Sint32 boundary2, SDL_bool v
 	size = SDLTest_GenerateSignedBoundaryValues(minValue, maxValue,
 				(Sint64) boundary1, (Sint64) boundary2,
 				validDomain, buffer);
-	if(size == 0) {
+	if (buffer == NULL || size == 0) {
 		return INT_MIN;
 	}
 
@@ -553,7 +563,7 @@ SDLTest_RandomSint64BoundaryValue(Sint64 boundary1, Sint64 boundary2, SDL_bool v
 	size = SDLTest_GenerateSignedBoundaryValues(minValue, maxValue,
 				(Sint64) boundary1, (Sint64) boundary2,
 				validDomain, buffer);
-	if(size == 0) {
+	if (buffer == NULL || size == 0) {
 		return LLONG_MIN;
 	}
 
@@ -604,34 +614,48 @@ SDLTest_RandomDouble()
 char *
 SDLTest_RandomAsciiString()
 {
-	// note: fuzzerInvocationCounter is increment in the RandomAsciiStringWithMaximumLenght
 	return SDLTest_RandomAsciiStringWithMaximumLength(255);
 }
 
 char *
-SDLTest_RandomAsciiStringWithMaximumLength(int maxSize)
+SDLTest_RandomAsciiStringWithMaximumLength(int maxLength)
 {
 	int size;
-	char *string;
-	int counter;
 
-	fuzzerInvocationCounter++;
-
-	if(maxSize < 1) {
+	if(maxLength < 1) {
+                SDL_InvalidParamError("maxLength");
 		return NULL;
 	}
 
-	size = (SDLTest_RandomUint32() % (maxSize + 1)) + 1;
-	string = (char *)SDL_malloc(size * sizeof(char));
+	size = (SDLTest_RandomUint32() % (maxLength + 1));
+	
+	return SDLTest_RandomAsciiStringOfSize(size);	
+}
+
+char *
+SDLTest_RandomAsciiStringOfSize(int size)
+{
+	char *string;
+	int counter;
+
+
+	if(size < 1) {
+                SDL_InvalidParamError("size");
+		return NULL;
+	}
+
+	string = (char *)SDL_malloc((size + 1) * sizeof(char));
 	if (string==NULL) {
 	  return NULL;
         }
 
 	for(counter = 0; counter < size; ++counter) {
-		string[counter] = (char)SDLTest_RandomIntegerInRange(1, 127);
+		string[counter] = (char)SDLTest_RandomIntegerInRange(32, 126);
 	}
 
 	string[counter] = '\0';
+
+	fuzzerInvocationCounter++;
 
 	return string;
 }

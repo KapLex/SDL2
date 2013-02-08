@@ -32,6 +32,16 @@ AC_SUBST(SDL_INTERFACE_AGE)
 AC_SUBST(SDL_BINARY_AGE)
 AC_SUBST(SDL_VERSION)
 
+dnl On Mac OS X we need to build with clang
+dnl We can't use $host or reorder AC_CANONICAL_HOST because of autoconf magic.
+case "`/bin/sh $ac_aux_dir/config.guess`" in
+    *-*-darwin*)
+        if test "x$CC" = "x"; then
+            CC=clang
+        fi
+        ;;
+esac
+
 # libtool versioning
 LT_INIT([win32-dll])
 
@@ -1650,10 +1660,6 @@ dnl See if we can use the new unified event interface in Linux 2.4
 CheckInputEvents()
 {
     dnl Check for Linux 2.4 unified input event interface support
-    AC_ARG_ENABLE(input-events,
-AC_HELP_STRING([--enable-input-events], [use Linux 2.4 unified input interface [[default=yes]]]),
-                  , enable_input_events=yes)
-    if test x$enable_input_events = xyes; then
         AC_MSG_CHECKING(for Linux 2.4 unified input interface)
         use_input_events=no
         AC_TRY_COMPILE([
@@ -1668,6 +1674,45 @@ AC_HELP_STRING([--enable-input-events], [use Linux 2.4 unified input interface [
         AC_MSG_RESULT($use_input_events)
         if test x$use_input_events = xyes; then
             AC_DEFINE(SDL_INPUT_LINUXEV, 1, [ ])
+        fi
+}
+
+dnl See if the platform offers libudev for device enumeration and hotplugging.
+CheckLibUDev()
+{
+    AC_ARG_ENABLE(libudev,
+AC_HELP_STRING([--enable-libudev], [enable libudev support [[default=yes]]]),
+                        , enable_libudev=yes)
+    if test x$enable_libudev = xyes; then
+        AC_CHECK_HEADER(libudev.h,
+                        have_libudev_h_hdr=yes,
+                        have_libudev_h_hdr=no)
+        if test x$have_libudev_h_hdr = xyes; then
+            AC_DEFINE(HAVE_LIBUDEV_H, 1, [ ])
+        fi
+    fi
+}
+
+dnl See if the platform offers libdbus for various IPC techniques.
+CheckDBus()
+{
+    AC_ARG_ENABLE(dbus,
+AC_HELP_STRING([--enable-dbus], [enable D-Bus support [[default=yes]]]),
+                        , enable_dbus=yes)
+    if test x$enable_dbus = xyes; then
+        AC_PATH_PROG(PKG_CONFIG, pkg-config, no)
+        if test x$PKG_CONFIG != xno; then
+            DBUS_CFLAGS=`$PKG_CONFIG --cflags dbus-1`
+            save_CFLAGS="$CFLAGS"
+            CFLAGS="$save_CFLAGS $DBUS_CFLAGS"
+            AC_CHECK_HEADER(dbus/dbus.h,
+                            have_dbus_dbus_h_hdr=yes,
+                            have_dbus_dbus_h_hdr=no)
+            CFLAGS="$save_CFLAGS"
+            if test x$have_dbus_dbus_h_hdr = xyes; then
+                AC_DEFINE(HAVE_DBUS_DBUS_H, 1, [ ])
+                EXTRA_CFLAGS="$EXTRA_CFLAGS $DBUS_CFLAGS"
+            fi
         fi
     fi
 }
@@ -2196,6 +2241,8 @@ case "$host" in
         CheckFusionSound
         CheckOpenGLX11
         CheckOpenGLESX11
+        CheckLibUDev
+        CheckDBus
         CheckInputEvents
         CheckTslib
         CheckUSBHID

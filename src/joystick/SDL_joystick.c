@@ -465,6 +465,9 @@ SDL_PrivateJoystickAxis(SDL_Joystick * joystick, Uint8 axis, Sint16 value)
     }
 
     /* Update internal joystick state */
+    if (value == joystick->axes[axis]) {
+        return 0;
+    }
     joystick->axes[axis] = value;
 
     /* Post the event, if desired */
@@ -634,7 +637,7 @@ int
 SDL_JoystickEventState(int state)
 {
 #if SDL_EVENTS_DISABLED
-    return SDL_IGNORE;
+    return SDL_DISABLE;
 #else
     const Uint32 event_list[] = {
         SDL_JOYAXISMOTION, SDL_JOYBALLMOTION, SDL_JOYHATMOTION,
@@ -644,7 +647,7 @@ SDL_JoystickEventState(int state)
 
     switch (state) {
     case SDL_QUERY:
-        state = SDL_IGNORE;
+        state = SDL_DISABLE;
         for (i = 0; i < SDL_arraysize(event_list); ++i) {
             state = SDL_EventState(event_list[i], SDL_QUERY);
             if (state == SDL_ENABLE) {
@@ -666,58 +669,46 @@ SDL_JoystickEventState(int state)
 SDL_bool 
 SDL_PrivateJoystickNeedsPolling()
 {
-	if ( SDL_SYS_JoystickNeedsPolling() )
-	{
-		// sys layer needs us to think
+	if (SDL_joysticks != NULL) {
 		return SDL_TRUE;
-	}
-	else
-	{
-		// otherwise only do it if a joystick is opened
-		return SDL_joysticks != NULL; 
+	} else {
+		return SDL_SYS_JoystickNeedsPolling();
 	}
 }
 
 
 /* return the guid for this index */
-JoystickGUID SDL_JoystickGetDeviceGUID(int device_index)
+SDL_JoystickGUID SDL_JoystickGetDeviceGUID(int device_index)
 {
 	return SDL_SYS_JoystickGetDeviceGUID( device_index );
 }
 
 /* return the guid for this opened device */
-JoystickGUID SDL_JoystickGetGUID(SDL_Joystick * joystick)
+SDL_JoystickGUID SDL_JoystickGetGUID(SDL_Joystick * joystick)
 {
 	return SDL_SYS_JoystickGetGUID( joystick );
 }
 
 /* convert the guid to a printable string */
-char *SDL_JoystickGetGUIDString(JoystickGUID guid)
+void SDL_JoystickGetGUIDString( SDL_JoystickGUID guid, char *pszGUID, int cbGUID )
 {
 	static const char k_rgchHexToASCII[] = "0123456789abcdef";
-	char *pchOut = NULL;
-	char *pchString = NULL;
 	int i;
-	pchString = SDL_malloc(33); // 16 bytes
-	if ( !pchString )
-	{
-		SDL_OutOfMemory();
-		return NULL;
-	}
-	
-	pchOut = pchString;
 
-	for ( i = 0; i < sizeof(guid); i++ )
+    if ((pszGUID == NULL) || (cbGUID <= 0)) {
+        return;
+    }
+
+	for ( i = 0; i < sizeof(guid.data) && i < (cbGUID-1); i++ )
 	{
 		// each input byte writes 2 ascii chars, and might write a null byte.
 		// If we don't have room for next input byte, stop
 		unsigned char c = guid.data[i];
 
-		*pchOut++ = k_rgchHexToASCII[ c >> 4 ];
-		*pchOut++ = k_rgchHexToASCII[ c & 0x0F ];
+		*pszGUID++ = k_rgchHexToASCII[ c >> 4 ];
+		*pszGUID++ = k_rgchHexToASCII[ c & 0x0F ];
 	}
-	*pchOut = '\0';
-	return pchString;
+	*pszGUID = '\0';
 }
 
 
@@ -753,9 +744,9 @@ static unsigned char nibble( char c )
 
 
 /* convert the string version of a joystick guid to the struct */
-JoystickGUID SDL_JoystickGetGUIDFromString(const char *pchGUID)
+SDL_JoystickGUID SDL_JoystickGetGUIDFromString(const char *pchGUID)
 {
-	JoystickGUID guid;
+	SDL_JoystickGUID guid;
 	int maxoutputbytes= sizeof(guid);
 	int len = SDL_strlen( pchGUID );
 	Uint8 *p;
