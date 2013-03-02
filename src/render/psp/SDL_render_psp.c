@@ -487,16 +487,16 @@ PSP_CreateTexture(SDL_Renderer * renderer, SDL_Texture * texture)
 			return -1;
 	}
 
-	psp_texture->pitch = texture->w * SDL_BYTESPERPIXEL(texture->format);	
-	psp_texture->size = psp_texture->textureWidth*psp_texture->textureHeight*(psp_texture->bits>>3);
+	psp_texture->pitch = psp_texture->textureWidth * SDL_BYTESPERPIXEL(texture->format);	
+	psp_texture->size = psp_texture->textureHeight*psp_texture->pitch;
 	psp_texture->data = SDL_calloc(1, psp_texture->size);
 	
 	if(!psp_texture->data)
 	{
-		free(psp_texture);
+		SDL_OutOfMemory();
+		SDL_free(psp_texture);
 		return -1;
-	}		
-
+	}
     texture->driverdata = psp_texture;
     
     return 0;
