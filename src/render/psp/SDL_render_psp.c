@@ -509,6 +509,12 @@ TextureActivate(SDL_Texture * texture)
 	PSP_TextureData *psp_texture = (PSP_TextureData *) texture->driverdata;
 	int scaleMode = GetScaleQuality();
 	
+	// Swizzling is useless with small textures.
+    if (texture->w >= 16 || texture->h >= 16)
+    {
+		TextureSwizzle(psp_texture);	
+    }
+    
 	sceGuEnable(GU_TEXTURE_2D);
 	sceGuTexWrap(GU_REPEAT, GU_REPEAT);
 	sceGuTexMode(psp_texture->format, 0, 0, psp_texture->swizzled);
@@ -539,12 +545,6 @@ PSP_UpdateTexture(SDL_Renderer * renderer, SDL_Texture * texture,
             src += pitch;
             dst += dpitch;
         }
-    }
-    
-    // Swizzling is useless with small textures.
-    if (texture->w >= 16 || texture->h >= 16)
-    {
-		TextureSwizzle(psp_texture);		
     }
     
 	sceKernelDcacheWritebackAll();
