@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2012 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2013 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -576,25 +576,30 @@ X11_InitModes(_THIS)
                     int actual_format;
                     unsigned long nitems, bytes_after;
                     Atom actual_type;
-   
-	                if (props[i] == EDID) {
-                        XRRGetOutputProperty(data->display, res->outputs[output], props[i],
-                                             0, 100, False, False,
-                                             AnyPropertyType,
-                                             &actual_type, &actual_format,
-                                             &nitems, &bytes_after, &prop);
 
-                        MonitorInfo *info = decode_edid(prop);
-                        if (info) {
-#ifdef X11MODES_DEBUG
-                            printf("Found EDID data for %s\n", output_info->name);
-                            dump_monitor_info(info);
-#endif
-                            SDL_strlcpy(display_name, info->dsc_product_name, sizeof(display_name));
-                            free(info);
+	                if (props[i] == EDID) {
+                        if (XRRGetOutputProperty(data->display,
+                                                 res->outputs[output], props[i],
+                                                 0, 100, False, False,
+                                                 AnyPropertyType,
+                                                 &actual_type, &actual_format,
+                                                 &nitems, &bytes_after, &prop) == Success ) {
+                            MonitorInfo *info = decode_edid(prop);
+                            if (info) {
+    #ifdef X11MODES_DEBUG
+                                printf("Found EDID data for %s\n", output_info->name);
+                                dump_monitor_info(info);
+    #endif
+                                SDL_strlcpy(display_name, info->dsc_product_name, sizeof(display_name));
+                                free(info);
+                            }
+                            XFree(prop);
                         }
                         break;
                     }
+                }
+                if (props) {
+                    XFree(props);
                 }
 
                 if (*display_name && inches) {
@@ -860,6 +865,7 @@ X11_GetDisplayBounds(_THIS, SDL_VideoDisplay * sdl_display, SDL_Rect * rect)
         if (xinerama) {
             rect->x = xinerama[data->xinerama_screen].x_org;
             rect->y = xinerama[data->xinerama_screen].y_org;
+            XFree(xinerama);
         }
     }
 #endif /* SDL_VIDEO_DRIVER_X11_XINERAMA */

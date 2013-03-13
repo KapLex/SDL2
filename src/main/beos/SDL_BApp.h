@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2012 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2013 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -221,7 +221,7 @@ private:
 			return;
 		}
 		win = GetSDLWindow(winID);
-		SDL_SendMouseMotion(win, 0, x, y);
+		SDL_SendMouseMotion(win, 0, 0, x, y);
 		
 		/* Tell the application that the mouse passed over, redraw needed */
 		BE_UpdateWindowFramebuffer(NULL,win,NULL,-1);
@@ -239,7 +239,7 @@ private:
 			return;
 		}
 		win = GetSDLWindow(winID);
-		SDL_SendMouseButton(win, state, button);
+		SDL_SendMouseButton(win, 0, state, button);
 	}
 	
 	void _HandleMouseWheel(BMessage *msg) {
@@ -254,7 +254,7 @@ private:
 			return;
 		}
 		win = GetSDLWindow(winID);
-		SDL_SendMouseWheel(win, xTicks, yTicks);
+		SDL_SendMouseWheel(win, 0, xTicks, yTicks);
 	}
 	
 	void _HandleKey(BMessage *msg) {

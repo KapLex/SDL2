@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2012 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2013 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -99,6 +99,7 @@ typedef struct SDL_VideoData
     Atom _NET_WM_ICON_NAME;
     Atom _NET_WM_ICON;
     Atom _NET_WM_PING;
+    Atom _NET_ACTIVE_WINDOW;
     Atom UTF8_STRING;
 
     SDL_Scancode key_layout[256];

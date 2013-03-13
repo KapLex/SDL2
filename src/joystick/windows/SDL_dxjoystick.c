@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2012 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2013 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -33,6 +33,7 @@
  * let it return 0 events. */
 
 #include "SDL_error.h"
+#include "SDL_assert.h"
 #include "SDL_events.h"
 #include "SDL_joystick.h"
 #include "../SDL_sysjoystick.h"
@@ -42,6 +43,7 @@
 #include "SDL_timer.h"
 #include "SDL_mutex.h"
 #include "SDL_events.h"
+#include "SDL_hints.h"
 #if !SDL_EVENTS_DISABLED
 #include "../../events/SDL_events_c.h"
 #endif
@@ -66,13 +68,76 @@ static SDL_bool coinitialized = SDL_FALSE;
 static LPDIRECTINPUT8 dinput = NULL;
 static SDL_bool s_bDeviceAdded = SDL_FALSE;
 static SDL_bool s_bDeviceRemoved = SDL_FALSE;
-static int s_nInstanceID = -1;
+static SDL_JoystickID s_nInstanceID = -1;
 static GUID *s_pKnownJoystickGUIDs = NULL;
 static SDL_cond *s_condJoystickThread = NULL;
 static SDL_mutex *s_mutexJoyStickEnum = NULL;
 static SDL_Thread *s_threadJoystick = NULL;
 static SDL_bool s_bJoystickThreadQuit = SDL_FALSE;
+static SDL_bool s_bXInputEnabled = SDL_TRUE;
+
+XInputGetState_t SDL_XInputGetState = NULL;
+XInputSetState_t SDL_XInputSetState = NULL;
+XInputGetCapabilities_t SDL_XInputGetCapabilities = NULL;
+DWORD SDL_XInputVersion = 0;
+
 static HANDLE s_pXInputDLL = 0;
+static int s_XInputDLLRefCount = 0;
+
+int
+WIN_LoadXInputDLL(void)
+{
+    DWORD version = 0;
+
+    if (s_pXInputDLL) {
+        SDL_assert(s_XInputDLLRefCount > 0);
+        s_XInputDLLRefCount++;
+        return 0;  /* already loaded */
+    }
+
+    version = (1 << 16) | 4;
+    s_pXInputDLL = LoadLibrary( L"XInput1_4.dll" );  // 1.4 Ships with Windows 8.
+    if (!s_pXInputDLL) {
+        version = (1 << 16) | 3;
+        s_pXInputDLL = LoadLibrary( L"XInput1_3.dll" );  // 1.3 Ships with Vista and Win7, can be installed as a restributable component.
+    }
+    if (!s_pXInputDLL) {
+        s_pXInputDLL = LoadLibrary( L"bin\\XInput1_3.dll" );
+    }
+    if (!s_pXInputDLL) {
+        return -1;
+    }
+
+    SDL_assert(s_XInputDLLRefCount == 0);
+    SDL_XInputVersion = version;
+    s_XInputDLLRefCount = 1;
+
+    /* 100 is the ordinal for _XInputGetStateEx, which returns the same struct as XinputGetState, but with extra data in wButtons for the guide button, we think... */
+    SDL_XInputGetState = (XInputGetState_t)GetProcAddress( (HMODULE)s_pXInputDLL, (LPCSTR)100 );
+    SDL_XInputSetState = (XInputSetState_t)GetProcAddress( (HMODULE)s_pXInputDLL, "XInputSetState" );
+    SDL_XInputGetCapabilities = (XInputGetCapabilities_t)GetProcAddress( (HMODULE)s_pXInputDLL, "XInputGetCapabilities" );
+    if ( !SDL_XInputGetState || !SDL_XInputSetState || !SDL_XInputGetCapabilities ) {
+        WIN_UnloadXInputDLL();
+        return -1;
+    }
+
+    return 0;
+}
+
+void
+WIN_UnloadXInputDLL(void)
+{
+    if ( s_pXInputDLL ) {
+        SDL_assert(s_XInputDLLRefCount > 0);
+        if (--s_XInputDLLRefCount == 0) {
+            FreeLibrary( s_pXInputDLL );
+            s_pXInputDLL = NULL;
+        }
+    } else {
+        SDL_assert(s_XInputDLLRefCount == 0);
+    }
+}
+
 
 extern HRESULT(WINAPI * DInputCreate) (HINSTANCE hinst, DWORD dwVersion,
                                        LPDIRECTINPUT * ppDI,
@@ -83,41 +148,11 @@ struct JoyStick_DeviceData_
 	DIDEVICEINSTANCE dxdevice;
 	char *joystickname;
 	Uint8 send_add_event;
-	int nInstanceID;
+	SDL_JoystickID nInstanceID;
 	SDL_bool bXInputDevice;
 	Uint8 XInputUserId;
 	struct JoyStick_DeviceData_ *pNext;
 };
-
-
-/* Forward decl's for XInput API's we load dynamically and use if available */
-typedef DWORD (WINAPI *XInputGetState_t)
-	(
-	DWORD         dwUserIndex,  // [in] Index of the gamer associated with the device
-	XINPUT_STATE_EX* pState        // [out] Receives the current state
-	);
-
-typedef DWORD (WINAPI *XInputSetState_t)
-	(
-	DWORD             dwUserIndex,  // [in] Index of the gamer associated with the device
-	XINPUT_VIBRATION* pVibration    // [in, out] The vibration information to send to the controller
-	);
-
-typedef DWORD (WINAPI *XInputGetCapabilities_t)
-	(
-	DWORD                dwUserIndex,   // [in] Index of the gamer associated with the device
-	DWORD                dwFlags,       // [in] Input flags that identify the device type
-	XINPUT_CAPABILITIES* pCapabilities  // [out] Receives the capabilities
-	);
-
-XInputGetState_t PC_XInputGetState;
-XInputSetState_t PC_XInputSetState;
-XInputGetCapabilities_t PC_XInputGetCapabilities;
-
-#define XINPUTGETSTATE			PC_XInputGetState
-#define XINPUTSETSTATE			PC_XInputSetState
-#define XINPUTGETCAPABILITIES	PC_XInputGetCapabilities
-#define INVALID_XINPUT_USERID 255
 
 typedef struct JoyStick_DeviceData_ JoyStick_DeviceData;
 
@@ -364,6 +399,11 @@ BOOL IsXInputDevice( const GUID* pGuidProductFromDirectInput )
 	HRESULT                 hr;
 	DWORD bCleanupCOM;
 
+    if (!s_bXInputEnabled)
+    {
+        return SDL_FALSE;
+    }
+
 	SDL_memset( pDevices, 0x0, sizeof(pDevices) );
 
 	// CoInit if needed
@@ -569,7 +609,7 @@ SDL_JoystickThread(void *_data)
 			}
 		}
 
-		if ( XINPUTGETCAPABILITIES )
+		if ( s_bXInputEnabled && XINPUTGETCAPABILITIES )
 		{
 			// scan for any change in XInput devices
 			for ( userId = 0; userId < 4; userId++ )
@@ -627,6 +667,10 @@ SDL_SYS_JoystickInit(void)
 {
     HRESULT result;
     HINSTANCE instance;
+	const char *env = SDL_GetHint(SDL_HINT_XINPUT_ENABLED);
+	if (env && !SDL_atoi(env)) {
+		s_bXInputEnabled = SDL_FALSE;
+	}
 
     result = WIN_CoInitialize();
     if (FAILED(result)) {
@@ -661,29 +705,14 @@ SDL_SYS_JoystickInit(void)
         return (-1);
     }
 
-	s_mutexJoyStickEnum = SDL_CreateMutex();
-	s_condJoystickThread = SDL_CreateCond();
-	s_bDeviceAdded = SDL_TRUE; // force a scan of the system for joysticks this first time
-	SDL_SYS_JoystickDetect();
+    s_mutexJoyStickEnum = SDL_CreateMutex();
+    s_condJoystickThread = SDL_CreateCond();
+    s_bDeviceAdded = SDL_TRUE; // force a scan of the system for joysticks this first time
+    SDL_SYS_JoystickDetect();
 
-	// try to load XInput support if available
-	s_pXInputDLL = LoadLibrary( L"XInput1_3.dll" );
-	if ( !s_pXInputDLL )
-		s_pXInputDLL = LoadLibrary( L"bin\\XInput1_3.dll" );
-	if ( s_pXInputDLL )
-	{
-		// 100 is the ordinal for _XInputGetStateEx, which returns the same struct as XinputGetState, but with extra data in wButtons for the guide button, we think...
-		PC_XInputGetState = (XInputGetState_t)GetProcAddress( (HMODULE)s_pXInputDLL, (LPCSTR)100 );
-		PC_XInputSetState = (XInputSetState_t)GetProcAddress( (HMODULE)s_pXInputDLL, "XInputSetState" );
-		PC_XInputGetCapabilities = (XInputGetCapabilities_t)GetProcAddress( (HMODULE)s_pXInputDLL, "XInputGetCapabilities" );
-		if ( !PC_XInputGetState || !PC_XInputSetState || !PC_XInputGetCapabilities )
-		{
-			SDL_SYS_JoystickQuit();
-			SDL_SetError("GetProcAddress() failed when loading XInput.", GetLastError());
-			return (-1);
-		}
-	}
-
+    if ((s_bXInputEnabled) && (WIN_LoadXInputDLL() == -1)) {
+        s_bXInputEnabled = SDL_FALSE;  /* oh well. */
+    }
 
 	if ( !s_threadJoystick )
 	{
@@ -806,7 +835,7 @@ void SDL_SYS_JoystickDetect()
 		pCurList = SYS_Joystick;
 		SYS_Joystick = NULL;
 		s_iNewGUID = 0;
-		SDL_mutexP( s_mutexJoyStickEnum );
+		SDL_LockMutex( s_mutexJoyStickEnum );
 
 		if ( !s_pKnownJoystickGUIDs )
 			s_pKnownJoystickGUIDs = SDL_malloc( sizeof(GUID)*MAX_JOYSTICKS );
@@ -819,7 +848,7 @@ void SDL_SYS_JoystickDetect()
 			EnumJoysticksCallback,
 			&pCurList, DIEDFL_ATTACHEDONLY);
 
-		SDL_mutexV( s_mutexJoyStickEnum );
+		SDL_UnlockMutex( s_mutexJoyStickEnum );
 	}
 
 	if ( pCurList )
@@ -934,6 +963,7 @@ SDL_SYS_JoystickOpen(SDL_Joystick * joystick, int device_index)
 
     /* allocate memory for system specific hardware data */
 	joystick->instance_id = joystickdevice->nInstanceID;
+    joystick->closed = 0;
     joystick->hwdata =
         (struct joystick_hwdata *) SDL_malloc(sizeof(struct joystick_hwdata));
     if (joystick->hwdata == NULL) {
@@ -959,11 +989,12 @@ SDL_SYS_JoystickOpen(SDL_Joystick * joystick, int device_index)
 				userId++;
 		}
 
-		if ( XINPUTGETCAPABILITIES )
+		if ( s_bXInputEnabled && XINPUTGETCAPABILITIES )
 		{
 			result = XINPUTGETCAPABILITIES( userId, XINPUT_FLAG_GAMEPAD, &capabilities );
 			if ( result == ERROR_SUCCESS )
 			{
+                const SDL_bool bIs14OrLater = (SDL_XInputVersion >= ((1<<16)|4));
 				SDL_bool bIsSupported = SDL_FALSE;
 				// Current version of XInput mistakenly returns 0 as the Type. Ignore it and ensure the subtype is a gamepad.
 				bIsSupported = ( capabilities.SubType == XINPUT_DEVSUBTYPE_GAMEPAD );
@@ -976,6 +1007,9 @@ SDL_SYS_JoystickOpen(SDL_Joystick * joystick, int device_index)
 				{
 					// valid
 					joystick->hwdata->bXInputDevice = SDL_TRUE;
+                    if ((!bIs14OrLater) || (capabilities.Flags & XINPUT_CAPS_FFB_SUPPORTED)) {
+					    joystick->hwdata->bXInputHaptic = SDL_TRUE;
+                    }
 					SDL_memset( joystick->hwdata->XInputState, 0x0, sizeof(joystick->hwdata->XInputState) );
 					joystickdevice->XInputUserId = userId;
 					joystick->hwdata->userid = userId;
@@ -1669,11 +1703,9 @@ SDL_SYS_JoystickQuit(void)
 		s_pKnownJoystickGUIDs = NULL;
 	}
 
-	if ( s_pXInputDLL )
-	{
-		FreeLibrary( s_pXInputDLL );
-		s_pXInputDLL = NULL;
-	}
+    if (s_bXInputEnabled) {
+        WIN_UnloadXInputDLL();
+    }
 }
 
 

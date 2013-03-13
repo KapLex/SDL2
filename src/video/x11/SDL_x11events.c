@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2012 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2013 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -40,12 +40,6 @@
 #include "SDL_syswm.h"
 
 #include <stdio.h>
-
-#ifdef SDL_INPUT_LINUXEV
-/* Touch Input/event* includes */
-#include <linux/input.h>
-#include <fcntl.h>
-#endif
 
 /*#define DEBUG_XEVENTS*/
 
@@ -448,24 +442,23 @@ X11_DispatchEvent(_THIS)
                 printf("window %p: X11 motion: %d,%d\n", xevent.xmotion.x, xevent.xmotion.y);
 #endif
 
-                SDL_SendMouseMotion(data->window, 0, xevent.xmotion.x, xevent.xmotion.y);
+                SDL_SendMouseMotion(data->window, 0, 0, xevent.xmotion.x, xevent.xmotion.y);
             }
         }
         break;
 
     case ButtonPress:{
             int ticks = 0;
-            if (X11_IsWheelEvent(display,&xevent,&ticks) == SDL_TRUE) {
-                SDL_SendMouseWheel(data->window, 0, ticks);
-            }
-            else {
-                SDL_SendMouseButton(data->window, SDL_PRESSED, xevent.xbutton.button);
+            if (X11_IsWheelEvent(display,&xevent,&ticks)) {
+                SDL_SendMouseWheel(data->window, 0, 0, ticks);
+            } else {
+                SDL_SendMouseButton(data->window, 0, SDL_PRESSED, xevent.xbutton.button);
             }
         }
         break;
 
     case ButtonRelease:{
-            SDL_SendMouseButton(data->window, SDL_RELEASED, xevent.xbutton.button);
+            SDL_SendMouseButton(data->window, 0, SDL_RELEASED, xevent.xbutton.button);
         }
         break;
 
@@ -704,90 +697,6 @@ X11_PumpEvents(_THIS)
 
     /* FIXME: Only need to do this when there are pending focus changes */
     X11_HandleFocusChanges(_this);
-
-    /*Dont process evtouch events if XInput2 multitouch is supported*/
-    if(X11_Xinput2IsMultitouchSupported()) {
-        return;
-    }
-
-#ifdef SDL_INPUT_LINUXEV
-    /* Process Touch events*/
-    int i = 0,rd;
-    struct input_event ev[64];
-    int size = sizeof (struct input_event);
-
-/* !!! FIXME: clean the tabstops out of here. */
-    for(i = 0;i < SDL_GetNumTouch();++i) {
-	SDL_Touch* touch = SDL_GetTouchIndex(i);
-	if(!touch) printf("Touch %i/%i DNE\n",i,SDL_GetNumTouch());
-	EventTouchData* data;
-	data = (EventTouchData*)(touch->driverdata);
-	if(data == NULL) {
-	  printf("No driver data\n");
-	  continue;
-	}
-	if(data->eventStream <= 0) 
-	    printf("Error: Couldn't open stream\n");
-	rd = read(data->eventStream, ev, size * 64);
-	if(rd >= size) {
-	    for (i = 0; i < rd / sizeof(struct input_event); i++) {
-		switch (ev[i].type) {
-		case EV_ABS:
-		    switch (ev[i].code) {
-			case ABS_X:
-			    data->x = ev[i].value;
-			    break;
-			case ABS_Y:
-			    data->y = ev[i].value;
-			    break;
-			case ABS_PRESSURE:
-			    data->pressure = ev[i].value;
-			    if(data->pressure < 0) data->pressure = 0;
-			    break;
-			case ABS_MISC:
-			    if(ev[i].value == 0)
-			        data->up = SDL_TRUE;			    
-			    break;
-			}
-		    break;
-		case EV_MSC:
-			if(ev[i].code == MSC_SERIAL)
-				data->finger = ev[i].value;
-			break;
-		case EV_KEY:
-			if(ev[i].code == BTN_TOUCH)
-			    if(ev[i].value == 0)
-			        data->up = SDL_TRUE;
-			break;
-		case EV_SYN:
-		  if(!data->down) {
-		      data->down = SDL_TRUE;
-		      SDL_SendFingerDown(touch->id,data->finger,
-		    		  data->down, data->x, data->y,
-		    		  data->pressure);
-		  }
-		  else if(!data->up)
-		    SDL_SendTouchMotion(touch->id,data->finger, 
-					SDL_FALSE, data->x,data->y,
-					data->pressure);
-		  else
-		  {
-		      data->down = SDL_FALSE;
-			  SDL_SendFingerDown(touch->id,data->finger,
-					  data->down, data->x,data->y,
-					  data->pressure);
-			  data->x = -1;
-			  data->y = -1;
-			  data->pressure = -1;
-			  data->finger = 0;
-			  data->up = SDL_FALSE;
-		  }
-		  break;		
-		}
-	    }
-	}
-    }
-#endif
 }
 
 

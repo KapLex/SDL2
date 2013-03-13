@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2012 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2013 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -38,6 +38,7 @@ SDL_bool SDL_GetPowerInfo_NintendoDS(SDL_PowerState *, int *, int *);
 SDL_bool SDL_GetPowerInfo_UIKit(SDL_PowerState *, int *, int *);
 SDL_bool SDL_GetPowerInfo_Android(SDL_PowerState *, int *, int *);
 SDL_bool SDL_GetPowerInfo_PSP(SDL_PowerState *, int *, int *);
+
 #ifndef SDL_POWER_DISABLED
 #ifdef SDL_POWER_HARDWIRED
 /* This is for things that _never_ have a battery */

@@ -46,7 +46,7 @@ int audio_enumerateAndNameAudioDevices()
       /* Get number of devices. */
       n = SDL_GetNumAudioDevices(t);
       SDLTest_AssertPass("Call to SDL_GetNumAudioDevices(%i)", t);
-      SDLTest_Log("Number of %s devices < 0, reported as %i", (t) ? "output" : "capture", n);
+      SDLTest_Log("Number of %s devices < 0, reported as %i", (t) ? "capture" : "output", n);
       SDLTest_AssertCheck(n >= 0, "Validate result is >= 0, got: %i", n);
 
       /* Variation of non-zero type */
@@ -612,7 +612,7 @@ int audio_convertAudio()
  */
 int audio_openCloseAudioDeviceConnected()
 {
-   int result;
+   int result = -1;
    int i;
    int count;
    char *device;   
@@ -641,7 +641,7 @@ int audio_openCloseAudioDeviceConnected()
        /* Open device */
        id = SDL_OpenAudioDevice((const char *)device, 0, &desired, &obtained, SDL_AUDIO_ALLOW_ANY_CHANGE);
        SDLTest_AssertPass("SDL_OpenAudioDevice('%s',...)", device);
-       SDLTest_AssertCheck(id > 1, "Validate device ID; expected: >=2, got: %i", id);
+       SDLTest_AssertCheck(id > 1, "Validate device ID; expected: >1, got: %i", id);
        if (id > 1) {
 
 /* TODO: enable test code when function is available in SDL2 */
@@ -650,8 +650,8 @@ int audio_openCloseAudioDeviceConnected()
          /* Get connected status */
          result = SDL_AudioDeviceConnected(id);
          SDLTest_AssertPass("Call to SDL_AudioDeviceConnected()");
-         SDLTest_AssertCheck(result == 1, "Verify returned value; expected: 0; got: %i", result);
 #endif
+         SDLTest_AssertCheck(result == 1, "Verify returned value; expected: 1; got: %i", result);
          
          /* Close device again */
          SDL_CloseAudioDevice(id);

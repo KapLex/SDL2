@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2012 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2013 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -89,7 +89,7 @@ SetupWindowData(_THIS, SDL_Window * window, HWND hwnd, SDL_bool created)
     data->hwnd = hwnd;
     data->hdc = GetDC(hwnd);
     data->created = created;
-    data->mouse_pressed = SDL_FALSE;
+    data->mouse_button_flags = 0;
     data->videodata = videodata;
 
     window->driverdata = data;
@@ -557,7 +557,7 @@ WIN_SetWindowGrab(_THIS, SDL_Window * window, SDL_bool grabbed)
 	{
 		HWND top;
 		SDL_WindowData *data = (SDL_WindowData *) window->driverdata;
-		HWND hwnd = ((SDL_WindowData *) window->driverdata)->hwnd;
+		HWND hwnd = data->hwnd;
 		UINT flags = SWP_NOMOVE | SWP_NOSIZE;
 
 		if ( SDL_ShouldAllowTopmost() && (window->flags & SDL_WINDOW_INPUT_FOCUS ) ) {

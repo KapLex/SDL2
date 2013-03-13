@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2012 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2013 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -768,37 +768,28 @@ X11_SetWindowSize(_THIS, SDL_Window * window)
          XFree(sizehints);
 
         /* From Pierre-Loup:
-           For the windowed resize problem; WMs each have their little quirks with
-           that.  When you change the size hints, they get a ConfigureNotify event
-           with the WM_NORMAL_SIZE_HINTS Atom.  They all save the hints then, but
-           they don't all resize the window right away to enforce the new hints.
-           Those who do properly do it are:
-          
-             - XFWM
-             - metacity
-             - KWin
+           WMs each have their little quirks with that.  When you change the
+           size hints, they get a ConfigureNotify event with the
+           WM_NORMAL_SIZE_HINTS Atom.  They all save the hints then, but they
+           don't all resize the window right away to enforce the new hints.
 
-           These are great.  Now, others are more problematic as you could observe
-           first hand.  Compiz/Unity only falls into the code that does it on select
-           actions, such as window move, raise, map, etc.
+           Some of them resize only after:
+            - A user-initiated move or resize
+            - A code-initiated move or resize
+            - Hiding & showing window (Unmap & map)
 
-           WindowMaker is even more difficult and will _only_ do it on map.
-
-           Awesome only does it on user-initiated moves as far as I can tell.
-          
-           Your raise workaround only fixes compiz/Unity.  With that all "modern"
-           window managers are covered.  Trying to Hide/Show on windowed resize
-           (UnMap/Map) fixes both Unity and WindowMaker, but introduces subtle
-           problems with transitioning from Windowed to Fullscreen on Unity.  Since
-           some window moves happen after the transitions to fullscreen, that forces
-           SDL to fall from windowed to fullscreen repeatedly and it sometimes leaves
-           itself in a state where the fullscreen window is slightly offset by what
-           used to be the window decoration titlebar.
-        */
+           The following move & resize seems to help a lot of WMs that didn't
+           properly update after the hints were changed. We don't do a
+           hide/show, because there are supposedly subtle problems with doing so
+           and transitioning from windowed to fullscreen in Unity.
+         */
+        XResizeWindow(display, data->xwindow, window->w, window->h);
+        XMoveWindow(display, data->xwindow, window->x, window->y);
         XRaiseWindow(display, data->xwindow);
     } else {
         XResizeWindow(display, data->xwindow, window->w, window->h);
     }
+
     XFlush(display);
 }
 
@@ -936,10 +927,39 @@ X11_MinimizeWindow(_THIS, SDL_Window * window)
     XFlush(display);
 }
 
+static void
+SetWindowActive(_THIS, SDL_Window * window)
+{
+    SDL_WindowData *data = (SDL_WindowData *) window->driverdata;
+    SDL_DisplayData *displaydata =
+        (SDL_DisplayData *) SDL_GetDisplayForWindow(window)->driverdata;
+    Display *display = data->videodata->display;
+	Atom _NET_ACTIVE_WINDOW = data->videodata->_NET_ACTIVE_WINDOW;
+
+    if (X11_IsWindowMapped(_this, window)) {
+        XEvent e;
+
+        SDL_zero(e);
+        e.xany.type = ClientMessage;
+        e.xclient.message_type = _NET_ACTIVE_WINDOW;
+        e.xclient.format = 32;
+        e.xclient.window = data->xwindow;
+        e.xclient.data.l[0] = 1;  /* source indication. 1 = application */
+		e.xclient.data.l[1] = CurrentTime;
+		e.xclient.data.l[2] = 0;
+
+        XSendEvent(display, RootWindow(display, displaydata->screen), 0,
+                   SubstructureNotifyMask | SubstructureRedirectMask, &e);
+
+    	XFlush(display);
+    }
+}
+
 void
 X11_RestoreWindow(_THIS, SDL_Window * window)
 {
     SetWindowMaximized(_this, window, SDL_FALSE);
+	SetWindowActive(_this, window);
     X11_ShowWindow(_this, window);
 }
 

@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2012 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2013 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -54,7 +54,7 @@ typedef struct SDL_RWops
      *  Seek to \c offset relative to \c whence, one of stdio's whence values:
      *  RW_SEEK_SET, RW_SEEK_CUR, RW_SEEK_END
      *  
-     *  \return the final offset in the data stream.
+     *  \return the final offset in the data stream, or -1 on error.
      */
     Sint64 (SDLCALL * seek) (struct SDL_RWops * context, Sint64 offset,
                              int whence);

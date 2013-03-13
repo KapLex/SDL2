@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2012 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2013 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -102,8 +102,9 @@ DirectFB_CreateDevice(int devindex)
 {
     SDL_VideoDevice *device;
 
-    if (!SDL_DirectFB_LoadLibrary())
+    if (!SDL_DirectFB_LoadLibrary()) {
         return NULL;
+    }
 
     /* Initialize all variables that we clean on shutdown */
     SDL_DFB_ALLOC_CLEAR(device, sizeof(SDL_VideoDevice));

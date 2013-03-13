@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2012 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2013 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -361,6 +361,12 @@ D3D_Reset(SDL_Renderer * renderer)
     D3D_RenderData *data = (D3D_RenderData *) renderer->driverdata;
     HRESULT result;
 
+    /* Release the default render target before reset */
+    if (data->defaultRenderTarget) {
+        IDirect3DSurface9_Release(data->defaultRenderTarget);
+        data->defaultRenderTarget = NULL;
+    }
+
     result = IDirect3DDevice9_Reset(data->device, &data->pparams);
     if (FAILED(result)) {
         if (result == D3DERR_DEVICELOST) {
@@ -377,6 +383,7 @@ D3D_Reset(SDL_Renderer * renderer)
     IDirect3DDevice9_SetRenderState(data->device, D3DRS_CULLMODE,
                                     D3DCULL_NONE);
     IDirect3DDevice9_SetRenderState(data->device, D3DRS_LIGHTING, FALSE);
+    IDirect3DDevice9_GetRenderTarget(data->device, 0, &data->defaultRenderTarget);
     return 0;
 }
 
@@ -469,8 +476,11 @@ D3D_CreateRenderer(SDL_Window * window, Uint32 flags)
         }
 
         for (d3dxVersion=50;d3dxVersion>0;d3dxVersion--) {
-            SDL_snprintf(d3dxDLLFile, 49, "D3DX9_%02d.dll", d3dxVersion);
-            data->d3dxDLL = SDL_LoadObject(d3dxDLLFile);
+            LPTSTR dllName;
+            SDL_snprintf(d3dxDLLFile, sizeof(d3dxDLLFile), "D3DX9_%02d.dll", d3dxVersion);
+            dllName = WIN_UTF8ToString(d3dxDLLFile);
+            data->d3dxDLL = (void *)LoadLibrary(dllName); /* not using SDL_LoadObject() as we want silently fail - no error message */
+            SDL_free(dllName);
             if (data->d3dxDLL) {
                 HRESULT (WINAPI *D3DXCreateMatrixStack) (DWORD Flags, LPD3DXMATRIXSTACK*  ppStack);
                 D3DXCreateMatrixStack = (HRESULT (WINAPI *) (DWORD, LPD3DXMATRIXSTACK*)) SDL_LoadFunction(data->d3dxDLL, "D3DXCreateMatrixStack");
@@ -1482,7 +1492,10 @@ D3D_DestroyRenderer(SDL_Renderer * renderer)
 
     if (data) {
         // Release the render target
-        IDirect3DSurface9_Release(data->defaultRenderTarget);
+        if (data->defaultRenderTarget) {
+            IDirect3DSurface9_Release(data->defaultRenderTarget);
+            data->defaultRenderTarget = NULL;
+        }
         if (data->currentRenderTarget != NULL) {
             IDirect3DSurface9_Release(data->currentRenderTarget);
             data->currentRenderTarget = NULL;

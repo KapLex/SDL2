@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2012 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2013 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -37,15 +37,15 @@ NDS_PumpEvents(_THIS)
     scanKeys();
     /* TODO: defer click-age */
     if (keysDown() & KEY_TOUCH) {
-        SDL_SendMouseButton(0, SDL_PRESSED, 0);
+        SDL_SendMouseButton(NULL, 0, SDL_PRESSED, 0);
     } else if (keysUp() & KEY_TOUCH) {
-        SDL_SendMouseButton(0, SDL_RELEASED, 0);
+        SDL_SendMouseButton(NULL, 0, SDL_RELEASED, 0);
     }
     if (keysHeld() & KEY_TOUCH) {
 		touchPosition t;
 
 		touchRead(&t);
-        SDL_SendMouseMotion(0, 0, t.px, t.py);
+        SDL_SendMouseMotion(NULL, 0, 0, t.px, t.py);
     }
 }
 

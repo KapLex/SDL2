@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2012 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2013 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -332,7 +332,7 @@ X11_GL_InitExtensions(_THIS)
     _this->gl_data->HAS_GLX_EXT_swap_control_tear = SDL_FALSE;
     if (HasExtension("GLX_EXT_swap_control", extensions)) {
         _this->gl_data->glXSwapIntervalEXT =
-            (int (*)(Display*,GLXDrawable,int))
+            (void (*)(Display*,GLXDrawable,int))
                 X11_GL_GetProcAddress(_this, "glXSwapIntervalEXT");
         if (HasExtension("GLX_EXT_swap_control_tear", extensions)) {
             _this->gl_data->HAS_GLX_EXT_swap_control_tear = SDL_TRUE;
@@ -496,6 +496,33 @@ X11_GL_GetVisual(_THIS, Display * display, int screen)
     return vinfo;
 }
 
+#ifndef GLXBadContext
+#define GLXBadContext 0
+#endif
+#ifndef GLXBadFBConfig
+#define GLXBadFBConfig 9
+#endif
+#ifndef GLXBadProfileARB
+#define GLXBadProfileARB 13
+#endif
+static int (*handler) (Display *, XErrorEvent *) = NULL;
+static int
+X11_GL_CreateContextErrorHandler(Display * d, XErrorEvent * e)
+{
+    switch (e->error_code) {
+    case GLXBadContext:
+    case GLXBadFBConfig:
+    case GLXBadProfileARB:
+    case BadRequest:
+    case BadMatch:
+    case BadValue:
+    case BadAlloc:
+        return (0);
+    default:
+        return (handler(d, e));
+    }
+}
+
 SDL_GLContext
 X11_GL_CreateContext(_THIS, SDL_Window * window)
 {
@@ -516,6 +543,7 @@ X11_GL_CreateContext(_THIS, SDL_Window * window)
 
     /* We do this to create a clean separation between X and GLX errors. */
     XSync(display, False);
+    handler = XSetErrorHandler(X11_GL_CreateContextErrorHandler);
     XGetWindowAttributes(display, data->xwindow, &xattr);
     v.screen = screen;
     v.visualid = XVisualIDFromVisual(xattr.visual);
@@ -532,10 +560,7 @@ X11_GL_CreateContext(_THIS, SDL_Window * window)
                context to grab the new context creation function */
             GLXContext temp_context =
                 _this->gl_data->glXCreateContext(display, vinfo, NULL, True);
-            if (!temp_context) {
-                SDL_SetError("Could not create GL context");
-                return NULL;
-            } else {
+            if (temp_context) {
                 /* max 8 attributes plus terminator */
                 int attribs[9] = {
                     GLX_CONTEXT_MAJOR_VERSION_ARB,
@@ -609,7 +634,8 @@ X11_GL_CreateContext(_THIS, SDL_Window * window)
         XFree(vinfo);
     }
     XSync(display, False);
-
+    XSetErrorHandler(handler);
+    
     if (!context) {
         SDL_SetError("Could not create GL context");
         return NULL;
@@ -642,7 +668,6 @@ X11_GL_MakeCurrent(_THIS, SDL_Window * window, SDL_GLContext context)
         SDL_SetError("Unable to make GL context current");
         status = -1;
     }
-    XSync(display, False);
 
     return (status);
 }
@@ -667,13 +692,23 @@ X11_GL_SetSwapInterval(_THIS, int interval)
         Display *display = ((SDL_VideoData *) _this->driverdata)->display;
         const SDL_WindowData *windowdata = (SDL_WindowData *)
             _this->current_glwin->driverdata;
+
         Window drawable = windowdata->xwindow;
-        status = _this->gl_data->glXSwapIntervalEXT(display,drawable,interval);
-        if (status != 0) {
-            SDL_SetError("glxSwapIntervalEXT failed");
-        } else {
-            swapinterval = interval;
-        }
+
+        /*
+         * This is a workaround for a bug in NVIDIA drivers. Bug has been reported
+         * and will be fixed in a future release (probably 319.xx).
+         *
+         * There's a bug where glXSetSwapIntervalEXT ignores updates because
+         * it has the wrong value cached. To work around it, we just run a no-op
+         * update to the current value.
+         */
+        int currentInterval = X11_GL_GetSwapInterval(_this);
+        _this->gl_data->glXSwapIntervalEXT(display, drawable, currentInterval);
+        _this->gl_data->glXSwapIntervalEXT(display, drawable, interval);
+
+        status = 0;
+        swapinterval = interval;
     } else if (_this->gl_data->glXSwapIntervalMESA) {
         status = _this->gl_data->glXSwapIntervalMESA(interval);
         if (status != 0) {

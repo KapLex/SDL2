@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2012 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2013 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -934,6 +934,16 @@ int SDL_ConvertPixels(int width, int height,
     SDL_BlitMap src_blitmap, dst_blitmap;
     SDL_Rect rect;
     void *nonconst_src = (void *) src;
+
+    /* Check to make sure we are bliting somewhere, so we don't crash */
+    if (!dst) {
+        SDL_InvalidParamError("dst");
+        return -1;
+    }
+    if (!dst_pitch) {
+        SDL_InvalidParamError("dst_pitch");
+        return -1;
+    }
 
     /* Fast path for same format copy */
     if (src_format == dst_format) {

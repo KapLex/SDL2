@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2012 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2013 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -41,13 +41,13 @@ SDL_AtomicTryLock(SDL_SpinLock *lock)
         /* Race condition on first lock... */
         _spinlock_mutex = SDL_CreateMutex();
     }
-    SDL_mutexP(_spinlock_mutex);
+    SDL_LockMutex(_spinlock_mutex);
     if (*lock == 0) {
         *lock = 1;
-        SDL_mutexV(_spinlock_mutex);
+        SDL_UnlockMutex(_spinlock_mutex);
         return SDL_TRUE;
     } else {
-        SDL_mutexV(_spinlock_mutex);
+        SDL_UnlockMutex(_spinlock_mutex);
         return SDL_FALSE;
     }
 

@@ -333,7 +333,7 @@ decode_standard_timings (const uchar *edid, MonitorInfo *info)
 	if (first != 0x01 && second != 0x01)
 	{
 	    int w = 8 * (first + 31);
-	    int h;
+	    int h = 0;
 
 	    switch (get_bits (second, 6, 7))
 	    {
@@ -603,6 +603,7 @@ dump_monitor_info (MonitorInfo *info)
 	case MDDI: interface = "MDDI"; break;
 	case DISPLAY_PORT: interface = "DisplayPort"; break;
 	case UNDEFINED: interface = "undefined"; break;
+	default: interface = "unknown"; break;
 	}
 	printf ("Interface: %s\n", interface);
 	
@@ -631,6 +632,7 @@ dump_monitor_info (MonitorInfo *info)
 	case MONOCHROME: s = "monochrome"; break;
 	case RGB: s = "rgb"; break;
 	case OTHER_COLOR: s = "other color"; break;
+	default: s = "unknown"; break;
 	};
 	
 	printf ("Color: %s\n", s);

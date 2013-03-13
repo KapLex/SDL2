@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2012 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2013 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -67,7 +67,7 @@ typedef struct {
 	Uint8 data[16];
 } SDL_JoystickGUID;
 
-typedef int SDL_JoystickID;
+typedef Sint32 SDL_JoystickID;
 
 
 /* Function prototypes */
@@ -126,7 +126,7 @@ extern DECLSPEC SDL_JoystickGUID SDLCALL SDL_JoystickGetGUIDFromString(const cha
 extern DECLSPEC SDL_bool SDLCALL SDL_JoystickGetAttached(SDL_Joystick * joystick);
 
 /**
- *  Get the instance ID of an opened joystick.
+ *  Get the instance ID of an opened joystick or -1 if the joystick is invalid.
  */
 extern DECLSPEC SDL_JoystickID SDLCALL SDL_JoystickInstanceID(SDL_Joystick * joystick);
 

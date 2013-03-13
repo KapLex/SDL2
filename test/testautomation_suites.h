@@ -13,12 +13,14 @@ extern SDLTest_TestSuiteReference audioTestSuite;
 extern SDLTest_TestSuiteReference clipboardTestSuite;
 extern SDLTest_TestSuiteReference eventsTestSuite;
 extern SDLTest_TestSuiteReference keyboardTestSuite;
+extern SDLTest_TestSuiteReference mainTestSuite;
 extern SDLTest_TestSuiteReference platformTestSuite;
 extern SDLTest_TestSuiteReference rectTestSuite;
 extern SDLTest_TestSuiteReference renderTestSuite;
 extern SDLTest_TestSuiteReference rwopsTestSuite;
 extern SDLTest_TestSuiteReference surfaceTestSuite;
 extern SDLTest_TestSuiteReference syswmTestSuite;
+extern SDLTest_TestSuiteReference sdltestTestSuite;
 extern SDLTest_TestSuiteReference videoTestSuite;
 extern SDLTest_TestSuiteReference mouseTestSuite;
 extern SDLTest_TestSuiteReference timerTestSuite;
@@ -29,12 +31,14 @@ SDLTest_TestSuiteReference *testSuites[] =  {
 	&clipboardTestSuite,
 	&eventsTestSuite,
 	&keyboardTestSuite,
+	&mainTestSuite,
 	&platformTestSuite,
 	&rectTestSuite,
 	&renderTestSuite,
 	&rwopsTestSuite,
 	&surfaceTestSuite,
 	&syswmTestSuite,
+	&sdltestTestSuite,
 	&videoTestSuite,
 	&mouseTestSuite,
 	&timerTestSuite,

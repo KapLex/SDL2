@@ -529,7 +529,7 @@ static int
 PSP_UpdateTexture(SDL_Renderer * renderer, SDL_Texture * texture,
                    const SDL_Rect * rect, const void *pixels, int pitch)
 {
-	PSP_TextureData *psp_texture = (PSP_TextureData *) texture->driverdata;
+//	PSP_TextureData *psp_texture = (PSP_TextureData *) texture->driverdata;
     const Uint8 *src;
     Uint8 *dst;
     int row, length,dpitch;

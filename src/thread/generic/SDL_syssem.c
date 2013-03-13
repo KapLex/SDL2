@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2012 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2013 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -123,8 +123,8 @@ SDL_DestroySemaphore(SDL_sem * sem)
         }
         SDL_DestroyCond(sem->count_nonzero);
         if (sem->count_lock) {
-            SDL_mutexP(sem->count_lock);
-            SDL_mutexV(sem->count_lock);
+            SDL_LockMutex(sem->count_lock);
+            SDL_UnlockMutex(sem->count_lock);
             SDL_DestroyMutex(sem->count_lock);
         }
         SDL_free(sem);

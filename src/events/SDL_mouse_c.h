@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2012 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2013 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -24,6 +24,8 @@
 #define _SDL_mouse_c_h
 
 #include "SDL_mouse.h"
+
+typedef Uint32 SDL_MouseID;
 
 struct SDL_Cursor
 {
@@ -55,6 +57,7 @@ typedef struct
     int (*SetRelativeMouseMode) (SDL_bool enabled);
 
     /* Data common to all mice */
+    SDL_MouseID mouseID;
     SDL_Window *focus;
     int x;
     int y;
@@ -86,13 +89,13 @@ extern void SDL_SetDefaultCursor(SDL_Cursor * cursor);
 extern void SDL_SetMouseFocus(SDL_Window * window);
 
 /* Send a mouse motion event */
-extern int SDL_SendMouseMotion(SDL_Window * window, int relative, int x, int y);
+extern int SDL_SendMouseMotion(SDL_Window * window, SDL_MouseID mouseID, int relative, int x, int y);
 
 /* Send a mouse button event */
-extern int SDL_SendMouseButton(SDL_Window * window, Uint8 state, Uint8 button);
+extern int SDL_SendMouseButton(SDL_Window * window, SDL_MouseID mouseID, Uint8 state, Uint8 button);
 
 /* Send a mouse wheel event */
-extern int SDL_SendMouseWheel(SDL_Window * window, int x, int y);
+extern int SDL_SendMouseWheel(SDL_Window * window, SDL_MouseID mouseID, int x, int y);
 
 /* Shutdown the mouse subsystem */
 extern void SDL_MouseQuit(void);

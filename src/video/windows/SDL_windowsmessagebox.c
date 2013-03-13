@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2012 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2013 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -231,7 +231,8 @@ int
 WIN_ShowMessageBox(const SDL_MessageBoxData *messageboxdata, int *buttonid)
 {
     WIN_DialogData *dialog;
-    int i, x, y, w, h, gap, which;
+    int i, x, y, w, h, gap;
+    INT_PTR which;
     const SDL_MessageBoxButtonData *buttons = messageboxdata->buttons;
  
     /* FIXME: Need a better algorithm for laying out the message box */

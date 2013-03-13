@@ -1,6 +1,6 @@
  /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2012 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2013 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -52,23 +52,8 @@
 
     self.multipleTouchEnabled = YES;
 
-    SDL_Touch touch;
-    touch.id = 0; //TODO: Should be -1?
-
-    //touch.driverdata = SDL_malloc(sizeof(EventTouchData));
-    //EventTouchData* data = (EventTouchData*)(touch.driverdata);
-
-    touch.x_min = 0;
-    touch.x_max = 1;
-    touch.native_xres = touch.x_max - touch.x_min;
-    touch.y_min = 0;
-    touch.y_max = 1;
-    touch.native_yres = touch.y_max - touch.y_min;
-    touch.pressure_min = 0;
-    touch.pressure_max = 1;
-    touch.native_pressureres = touch.pressure_max - touch.pressure_min;
-
-    touchId = SDL_AddTouch(&touch, "IPHONE SCREEN");
+    touchId = 1;
+    SDL_AddTouch(touchId, "");
 
     return self;
 
@@ -104,10 +89,10 @@
             CGPoint locationInView = [self touchLocation:touch shouldNormalize:NO];
 
             /* send moved event */
-            SDL_SendMouseMotion(NULL, 0, locationInView.x, locationInView.y);
+            SDL_SendMouseMotion(NULL, SDL_TOUCH_MOUSEID, 0, locationInView.x, locationInView.y);
 
             /* send mouse down event */
-            SDL_SendMouseButton(NULL, SDL_PRESSED, SDL_BUTTON_LEFT);
+            SDL_SendMouseButton(NULL, SDL_TOUCH_MOUSEID, SDL_PRESSED, SDL_BUTTON_LEFT);
 
             leftFingerDown = (SDL_FingerID)touch;
         }
@@ -117,17 +102,15 @@
         // FIXME: TODO: Using touch as the fingerId is potentially dangerous
         // It is also much more efficient than storing the UITouch pointer
         // and comparing it to the incoming event.
-        SDL_SendFingerDown(touchId, (SDL_FingerID)touch,
-                           SDL_TRUE, locationInView.x, locationInView.y,
-                           1);
+        SDL_SendTouch(touchId, (SDL_FingerID)touch,
+                      SDL_TRUE, locationInView.x, locationInView.y, 1.0f);
 #else
         int i;
         for(i = 0; i < MAX_SIMULTANEOUS_TOUCHES; i++) {
             if (finger[i] == NULL) {
                 finger[i] = touch;
-                SDL_SendFingerDown(touchId, i,
-                                   SDL_TRUE, locationInView.x, locationInView.y,
-                                   1);
+                SDL_SendTouch(touchId, i,
+                              SDL_TRUE, locationInView.x, locationInView.y, 1.0f);
                 break;
             }
         }
@@ -144,22 +127,20 @@
     while(touch) {
         if ((SDL_FingerID)touch == leftFingerDown) {
             /* send mouse up */
-            SDL_SendMouseButton(NULL, SDL_RELEASED, SDL_BUTTON_LEFT);
+            SDL_SendMouseButton(NULL, SDL_TOUCH_MOUSEID, SDL_RELEASED, SDL_BUTTON_LEFT);
             leftFingerDown = 0;
         }
 
         CGPoint locationInView = [self touchLocation:touch shouldNormalize:YES];
 #ifdef IPHONE_TOUCH_EFFICIENT_DANGEROUS
-        SDL_SendFingerDown(touchId, (long)touch,
-                           SDL_FALSE, locationInView.x, locationInView.y,
-                           1);
+        SDL_SendTouch(touchId, (long)touch,
+                      SDL_FALSE, locationInView.x, locationInView.y, 1.0f);
 #else
         int i;
         for (i = 0; i < MAX_SIMULTANEOUS_TOUCHES; i++) {
             if (finger[i] == touch) {
-                SDL_SendFingerDown(touchId, i,
-                                   SDL_FALSE, locationInView.x, locationInView.y,
-                                   1);
+                SDL_SendTouch(touchId, i,
+                              SDL_FALSE, locationInView.x, locationInView.y, 1.0f);
                 finger[i] = NULL;
                 break;
             }
@@ -189,21 +170,19 @@
             CGPoint locationInView = [self touchLocation:touch shouldNormalize:NO];
 
             /* send moved event */
-            SDL_SendMouseMotion(NULL, 0, locationInView.x, locationInView.y);
+            SDL_SendMouseMotion(NULL, SDL_TOUCH_MOUSEID, 0, locationInView.x, locationInView.y);
         }
 
         CGPoint locationInView = [self touchLocation:touch shouldNormalize:YES];
 #ifdef IPHONE_TOUCH_EFFICIENT_DANGEROUS
         SDL_SendTouchMotion(touchId, (long)touch,
-                            SDL_FALSE, locationInView.x, locationInView.y,
-                            1);
+                            locationInView.x, locationInView.y, 1.0f);
 #else
         int i;
         for (i = 0; i < MAX_SIMULTANEOUS_TOUCHES; i++) {
             if (finger[i] == touch) {
                 SDL_SendTouchMotion(touchId, i,
-                                    SDL_FALSE, locationInView.x, locationInView.y,
-                                    1);
+                                    locationInView.x, locationInView.y, 1.0f);
                 break;
             }
         }

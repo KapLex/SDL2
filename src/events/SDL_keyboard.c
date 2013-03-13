@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2012 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2013 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -861,7 +861,7 @@ SDL_GetKeyFromScancode(SDL_Scancode scancode)
 {
     SDL_Keyboard *keyboard = &SDL_keyboard;
     
-    if (scancode<SDL_SCANCODE_UNKNOWN || scancode >= SDL_NUM_SCANCODES) {
+    if (scancode < SDL_SCANCODE_UNKNOWN || scancode >= SDL_NUM_SCANCODES) {
           SDL_InvalidParamError("scancode");
           return 0;
     }
@@ -887,8 +887,13 @@ SDL_GetScancodeFromKey(SDL_Keycode key)
 const char *
 SDL_GetScancodeName(SDL_Scancode scancode)
 {
-    const char *name = SDL_scancode_names[scancode];
+    const char *name;
+    if (scancode < SDL_SCANCODE_UNKNOWN || scancode >= SDL_NUM_SCANCODES) {
+          SDL_InvalidParamError("scancode");
+          return "";    
+    }
 
+    name = SDL_scancode_names[scancode];
     if (name)
         return name;
     else
