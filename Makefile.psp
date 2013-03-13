@@ -77,7 +77,6 @@ OBJS= src/SDL.o \
       src/video/psp/SDL_pspvideo.o \
       src/video/psp/SDL_pspgl.o \
       src/video/psp/SDL_pspmouse.o \
-      src/video/psp/SDL_pspmath.o \
 
 INCDIR = ./include
 CFLAGS = -g -O2 -G0 -Wall -D__PSP__ -DHAVE_OPENGL

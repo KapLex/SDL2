@@ -20,11 +20,6 @@
     slouken@libsdl.org
 */
 
-/*  
-    PSP port contributed by:
-    Marcus R. Brown <mrbrown@ocgnet.org>
-    Jim Paris <jim@jtan.com>
-*/
 
 
 #include "SDL_thread.h"

@@ -20,10 +20,6 @@
     slouken@libsdl.org
 */
 
-/*  
-	rip from SDL 1.2
-*/
-
 #include "SDL_main.h"
 #include <pspkernel.h>
 #include <pspdebug.h>

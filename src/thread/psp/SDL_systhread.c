@@ -20,7 +20,6 @@
     slouken@libsdl.org
 */
 
-/* PSP port contributed by Marcus R. Brown <mrbrown@ocgnet.org>. */
 
 
 /* PSP thread management routines for SDL */

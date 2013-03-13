@@ -20,8 +20,6 @@
     slouken@libsdl.org
 */
 
-/* PSP port contributed by Marcus R. Brown <mrbrown@ocgnet.org>. */
-
 
 #ifndef _SDL_pspaudio_h
 #define _SDL_pspaudio_h

@@ -12,11 +12,6 @@ To build for the PSP, make sure psp-config is in the path and run:
    make -f Makefile.psp
 
 
-Test passed 
-------
-  testaudioinfo.c
-  loopwave.c
-
 
 To Do
 ------

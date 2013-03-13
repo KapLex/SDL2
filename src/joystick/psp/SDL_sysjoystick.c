@@ -20,9 +20,6 @@
     slouken@devolution.com
 */
 
-/* PSP port contributed by Marcus R. Brown <mrbrown@ocgnet.org>. */
-/* Joystick stuff by Matthew H <matthewh@webone.com.au>. */
-
 /* This is the system specific header for the SDL joystick API */
 #include <pspctrl.h>
 #include <pspkernel.h>

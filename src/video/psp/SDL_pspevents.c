@@ -20,10 +20,6 @@
     slouken@libsdl.org
 */
 
-/* SDL 1.2 for PSP port contributed by Marcus R. Brown <mrbrown@ocgnet.org>. 
-	 SDL 2.0 for PSP port modified by Captain Lex
-*/
-
 
 /* Being a null driver, there's no event stream. We just define stubs for
    most of the API. */
