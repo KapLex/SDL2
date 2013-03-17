@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2012 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2013 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -23,27 +23,6 @@
 #define _SDL_config_psp_h
 
 #include "SDL_platform.h"
-
-/**
- *  \file SDL_config_minimal.h
- *
- *  This is the minimal configuration that can be used to build SDL.
- */
-
-
-/*
-#if !defined(_STDINT_H_) && !defined(_STDINT_H) && (!defined(HAVE_STDINT_H) || !_HAVE_STDINT_H)
-typedef unsigned int size_t;
-typedef signed char int8_t;
-typedef unsigned char uint8_t;
-typedef signed short int16_t;
-typedef unsigned short uint16_t;
-typedef signed int int32_t;
-typedef unsigned int uint32_t;
-typedef signed long long int64_t;
-typedef unsigned long long uint64_t;
-typedef unsigned long uintptr_t;
-#endif  if (stdint.h isn't available) */
 
 
 
@@ -134,28 +113,24 @@ typedef unsigned long uintptr_t;
 #define SDL_TIMERS_PSP	1
 
 /* Enable the stub joystick driver (src/joystick/psp/\*.c) */
-#define SDL_JOYSTICK_PSP	1
+#define SDL_JOYSTICK_PSP		1
 
-/* Enable the dummy audio driver (src/audio/dummy/\*.c) */
+/* Enable the stub audio driver (src/audio/psp/\*.c) */
 #define SDL_AUDIO_DRIVER_PSP	1
 
-/* Enable the dummy video driver (src/video/dummy/\*.c) */
-//#define SDL_VIDEO_DRIVER_DUMMY	1
+/* PSP video dirver */
+#define SDL_VIDEO_DRIVER_PSP   1
 
-/* PSP Vedio dirver */
-#define SDL_VIDEO_DRIVER_PSP 1
+/* PSP render dirver */
+#define SDL_VIDEO_RENDER_PSP   1
 
+#define SDL_POWER_PSP          1
 
-/* Render with opengl */
+/* PSP doesn't have haptic device (src/haptic/dummy/\*.c) */
+#define SDL_HAPTIC_DISABLED	   1
 
-//#define SDL_VIDEO_RENDER_OGL_ES 1
-#define SDL_VIDEO_RENDER_PSP 1
-
-/* Enable the stub haptic driver (src/haptic/dummy/\*.c) */
-#define SDL_HAPTIC_PSP	1
-
-/* Enable the stub shared object loader (src/loadso/dummy/\*.c) */
-#define SDL_LOADSO_DISABLED	1
+/* PSP can't load shared object (src/loadso/dummy/\*.c) */
+#define SDL_LOADSO_DISABLED	   1
 
 
 #endif /* _SDL_config_minimal_h */

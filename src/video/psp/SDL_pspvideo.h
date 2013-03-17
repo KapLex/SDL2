@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2012 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2013 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -73,7 +73,7 @@ void PSP_RaiseWindow(_THIS, SDL_Window * window);
 void PSP_MaximizeWindow(_THIS, SDL_Window * window);
 void PSP_MinimizeWindow(_THIS, SDL_Window * window);
 void PSP_RestoreWindow(_THIS, SDL_Window * window);
-void PSP_SetWindowGrab(_THIS, SDL_Window * window);
+void PSP_SetWindowGrab(_THIS, SDL_Window * window, SDL_bool grabbed);
 void PSP_DestroyWindow(_THIS, SDL_Window * window);
 
 /* Window manager function */
@@ -91,7 +91,12 @@ int PSP_GL_GetSwapInterval(_THIS);
 void PSP_GL_SwapWindow(_THIS, SDL_Window * window);
 void PSP_GL_DeleteContext(_THIS, SDL_GLContext context);
 
-
+/*PSP on screen keyboard */
+SDL_bool PSP_SDL_HasScreenKeyboardSupport(_THIS);
+void PSP_SDL_ShowScreenKeyboard(_THIS, SDL_Window *window);
+void PSP_SDL_HideScreenKeyboard(_THIS, SDL_Window *window);
+SDL_bool PSP_SDL_IsScreenKeyboardShown(_THIS, SDL_Window *window);
+    
 #endif /* __SDL_PANDORA_H__ */
 
 /* vi: set ts=4 sw=4 expandtab: */

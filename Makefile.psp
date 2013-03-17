@@ -26,7 +26,7 @@ OBJS= src/SDL.o \
       src/events/SDL_windowevents.o \
       src/file/SDL_rwops.o \
       src/haptic/SDL_haptic.o \
-      src/haptic/psp/SDL_syshaptic.o \
+      src/haptic/dummy/SDL_syshaptic.o \
       src/joystick/SDL_joystick.o \
       src/joystick/SDL_gamecontroller.o \
       src/joystick/psp/SDL_sysjoystick.o \
@@ -35,7 +35,6 @@ OBJS= src/SDL.o \
       src/render/SDL_render.o \
       src/render/SDL_yuv_sw.o \
       src/render/psp/SDL_render_psp.o \
-      src/render/psp/SDL_pspvram.o \
       src/render/software/SDL_blendfillrect.o \
       src/render/software/SDL_blendline.o \
       src/render/software/SDL_blendpoint.o \
