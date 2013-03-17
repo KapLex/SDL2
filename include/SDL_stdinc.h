@@ -414,19 +414,15 @@ SDL_FORCE_INLINE void *SDL_memcpy_inline(void *dst, const void *src, size_t len)
 
 SDL_FORCE_INLINE void *SDL_memcpy4(void *dst, const void *src, size_t dwords)
 {
-#if defined(__MACOSX__)
-    /* We can count on memcpy existing on Mac OS X and being well-tuned. */
-    return memcpy(dst, src, dwords * 4);
-#elif defined(__GNUC__) && defined(i386)
+#if defined(__GNUC__) && defined(i386)
     /* !!! FIXME: does this _really_ beat memcpy() on any modern platform? */
     /* !!! FIXME: shouldn't we just force the inputs to ecx/edi/esi instead of this tapdance with outputs? */
-    /* !!! FIXME: amd64? */
     int ecx, edi, esi;
     __asm__ __volatile__ (
         "cld \n\t"
         "rep ; movsl \n\t"
         : "=&c" (ecx), "=&D" (edi), "=&S" (esi)
-        : "0" (SDL_static_cast(unsigned, len)), "1" (dst), "2" (src)
+        : "0" (SDL_static_cast(unsigned, dwords)), "1" (dst), "2" (src)
         : "memory"
     );
     return dst;
@@ -512,7 +508,7 @@ SDL_FORCE_INLINE char *SDL_strlwr_inline(char *str) { return _strlwr(str); }
 
 extern DECLSPEC char *SDLCALL SDL_strchr(const char *str, int c);
 #ifdef HAVE_STRCHR
-SDL_FORCE_INLINE char *SDL_strchr_inline(const char *str, int c) { return strchr(str, c); }
+SDL_FORCE_INLINE char *SDL_strchr_inline(const char *str, int c) { return (char*)strchr(str, c); }
 #define SDL_strchr SDL_strchr_inline
 #elif defined(HAVE_INDEX)  /* !!! FIXME: is there anywhere that has this but not strchr? */
 SDL_FORCE_INLINE char *SDL_strchr_inline(const char *str, int c) { return index(str, c); }
@@ -521,16 +517,16 @@ SDL_FORCE_INLINE char *SDL_strchr_inline(const char *str, int c) { return index(
 
 extern DECLSPEC char *SDLCALL SDL_strrchr(const char *str, int c);
 #ifdef HAVE_STRRCHR
-SDL_FORCE_INLINE char *SDL_strrchr_inline(const char *str, int c) { return strrchr(str, c); }
+SDL_FORCE_INLINE char *SDL_strrchr_inline(const char *str, int c) { return (char*)strrchr(str, c); }
 #define SDL_strrchr SDL_strrchr_inline
 #elif defined(HAVE_RINDEX)  /* !!! FIXME: is there anywhere that has this but not strrchr? */
-SDL_FORCE_INLINE char *SDL_strrchr_inline(const char *str, int c) { return rindex(str, c); }
+SDL_FORCE_INLINE char *SDL_strrchr_inline(const char *str, int c) { return (char*)rindex(str, c); }
 #define SDL_strrchr SDL_strrchr_inline
 #endif
 
 extern DECLSPEC char *SDLCALL SDL_strstr(const char *haystack, const char *needle);
 #ifdef HAVE_STRSTR
-SDL_FORCE_INLINE char *SDL_strstr_inline(const char *haystack, const char *needle) { return strstr(haystack, needle); }
+SDL_FORCE_INLINE char *SDL_strstr_inline(const char *haystack, const char *needle) { return (char*)strstr(haystack, needle); }
 #define SDL_strstr SDL_strstr_inline
 #endif
 
